@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8 grid grid-cols-5 gap-4">
+    <div class="bg-white p-4 rounded shadow text-center">
+        <h3 class="text-gray-500 text-sm">Leads Added Today</h3>
+        <p class="text-2xl font-bold">{{ stats.leads_added_today }}</p>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+        <h3 class="text-gray-500 text-sm">Emails Sent Today</h3>
+        <p class="text-2xl font-bold">{{ stats.emails_sent_today }}</p>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+        <h3 class="text-gray-500 text-sm">Replies Today</h3>
+        <p class="text-2xl font-bold">{{ stats.replies_received_today }}</p>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+        <h3 class="text-gray-500 text-sm">Active Deals</h3>
+        <p class="text-2xl font-bold">{{ stats.active_deals }}</p>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+        <h3 class="text-gray-500 text-sm">Pipeline Value</h3>
+        <p class="text-2xl font-bold">${{ stats.pipeline_value }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white rounded shadow p-4">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold">Leads</h2>
+            <form action="/" method="get" class="text-sm">
+                <select name="status" onchange="this.form.submit()" class="border rounded p-1">
+                    <option value="">All Statuses</option>
+                    <option value="DRAFTED" {% if current_status == "DRAFTED" %}selected{% endif %}>DRAFTED</option>
+                    <option value="SENT" {% if current_status == "SENT" %}selected{% endif %}>SENT</option>
+                    <option value="REPLIED" {% if current_status == "REPLIED" %}selected{% endif %}>REPLIED</option>
+                    <option value="LOW_FIT" {% if current_status == "LOW_FIT" %}selected{% endif %}>LOW_FIT</option>
+                </select>
+            </form>
+        </div>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 text-gray-600 text-sm">
+                    <th class="p-2 border-b">Company</th>
+                    <th class="p-2 border-b">Status</th>
+                    <th class="p-2 border-b">Fit Score</th>
+                    <th class="p-2 border-b">Last Updated</th>
+                    <th class="p-2 border-b">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in leads %}
+                    {% include "lead_row.html" %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="bg-white rounded shadow p-4">
+        <h2 class="text-lg font-bold mb-4">Active Pipeline (Kanban)</h2>
+        <div class="space-y-4">
+            {% set stages = ["REPLIED", "MEETING_BOOKED", "PROPOSAL_SENT", "NEGOTIATING"] %}
+            {% for stage in stages %}
+            <div class="bg-gray-50 p-3 rounded border">
+                <h3 class="font-semibold text-gray-700 border-b pb-1 mb-2">{{ stage }}</h3>
+                <ul class="space-y-2">
+                    {% for d in deals %}
+                        {% if d.deal.stage == stage %}
+                        <li class="bg-white p-2 rounded shadow-sm text-sm border-l-4 border-blue-500">
+                            <strong>{{ d.company }}</strong><br>
+                            <span class="text-gray-500">${{ d.deal.contract_value or 0 }}</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
