@@ -1,0 +1,40 @@
+[project]
+name = "contractor-os"
+version = "0.1.0"
+description = "Personal agentic system for finding and outreach to contract clients."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite",
+    "alembic",
+    "apscheduler>=3.10",
+    "langgraph",
+    "langchain-core",
+    "pydantic>=2",
+    "pyyaml",
+    "watchfiles",
+    "httpx",
+    "apify-client",
+    "playwright",
+    "feedparser",
+    "python-telegram-bot",
+    "jinja2",
+    "python-dotenv",
+    "resend",
+    "tenacity",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "respx",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
