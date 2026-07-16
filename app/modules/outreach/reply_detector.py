@@ -6,7 +6,7 @@ from app.core.config_loader import get_config
 from app.core.db import get_session
 from app.core.models import Lead, EmailEvent
 from app.core.llm_router import LLMRouter, RouterConfig
-from app.modules.crm.hooks import mark_replied
+from app.modules.crm.transitions import mark_replied
 
 logger = get_logger(__name__)
 
@@ -105,8 +105,8 @@ async def poll_inbox_job():
             )
             session.add(event)
             
-            # 4. Trigger CRM Hook
-            if sentiment in ["positive", "neutral"]:
-                mark_replied(lead.id)
+            # 4. Trigger CRM Hook (All replies are recorded, let CRM handle routing)
+            if sentiment in ["positive", "neutral", "negative", "ooo"]:
+                await mark_replied(lead.id, sentiment, body[:500], session)
                 
         await session.commit()

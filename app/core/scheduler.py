@@ -20,7 +20,8 @@ def get_scheduler() -> AsyncIOScheduler:
 
 # Stubs for jobs
 async def run_full_cycle():
-    logger.info("run_full_cycle stub executed")
+    from app.modules.orchestrator.graph import run_full_cycle as orchestrator_run
+    await orchestrator_run()
 
 async def check_due_followups():
     # Will be imported and replaced, this is just a fallback stub if not provided
@@ -32,7 +33,10 @@ async def poll_inbox():
     await poll_inbox_job()
 
 async def run_daily_digest():
-    logger.info("run_daily_digest stub executed")
+    from app.modules.crm.digest import run_daily_digest as crm_digest
+    from app.core.db import get_session
+    async with get_session() as session:
+        await crm_digest(session)
 
 
 def register_jobs(scheduler: AsyncIOScheduler, cfg):
