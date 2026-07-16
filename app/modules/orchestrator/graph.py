@@ -34,6 +34,13 @@ class PipelineState(TypedDict):
     batch_size: int
     lead_ids: List[int]
     errors: int
+    hunter_processed: int
+    profiler_processed: int
+    profiler_successful: int
+    craft_processed: int
+    craft_successful: int
+    outreach_processed: int
+    outreach_sent: int
 
 # Retry decorator: 3 attempts, delays approx 2s, 4s, 8s
 def resilient_node(func, failure_suffix):
@@ -72,6 +79,9 @@ async def crm_sync_node(state: PipelineState):
         if run:
             run.completed_at = datetime.utcnow().isoformat()
             run.errors = state.get("errors", 0)
+            run.leads_scraped = state.get("hunter_processed", 0)
+            run.leads_researched = state.get("profiler_successful", 0)
+            run.emails_sent = state.get("outreach_sent", 0)
             await session.commit()
     return state
 
@@ -108,7 +118,14 @@ async def run_full_cycle():
         "run_id": run_id,
         "batch_size": batch_size,
         "lead_ids": [],
-        "errors": 0
+        "errors": 0,
+        "hunter_processed": 0,
+        "profiler_processed": 0,
+        "profiler_successful": 0,
+        "craft_processed": 0,
+        "craft_successful": 0,
+        "outreach_processed": 0,
+        "outreach_sent": 0
     }
     
     app = build_graph()

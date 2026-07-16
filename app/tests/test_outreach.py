@@ -144,7 +144,7 @@ async def test_reply_detector(temp_db_session_outreach, monkeypatch):
     
     # 4. Spy on CRM Hook
     hook_called_with = []
-    def spy_mark_replied(lead_id):
+    async def spy_mark_replied(lead_id, sentiment, snippet, session):
         hook_called_with.append(lead_id)
     monkeypatch.setattr(reply_det_mod, "mark_replied", spy_mark_replied)
     

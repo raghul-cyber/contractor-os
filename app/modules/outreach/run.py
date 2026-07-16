@@ -28,6 +28,7 @@ async def run_outreach(state: dict) -> dict:
         )
         leads = leads_res.scalars().all()
         
+        successful_count = 0
         for lead in leads:
             try:
                 # Find the initial sequence
@@ -86,6 +87,8 @@ async def run_outreach(state: dict) -> dict:
                 session.add(EmailEvent(lead_id=lead.id, sequence_id=initial_seq.id, event_type="sent"))
                 session.add(ActivityLog(lead_id=lead.id, actor="outreach", action="Sent initial email"))
                 
+                successful_count += 1
+                
             except DailyLimitReachedError:
                 logger.warning(f"Daily limit reached. Pausing outreach for lead {lead.id} until next cycle.")
                 break # Stop processing this batch
@@ -99,7 +102,11 @@ async def run_outreach(state: dict) -> dict:
             # Commit per lead so EmailEvents are visible to subsequent sender queries
             await session.commit()
             
-    return state
+    return {
+        **state,
+        "outreach_processed": len(leads),
+        "outreach_sent": successful_count
+    }
 
 
 async def check_due_followups_job():

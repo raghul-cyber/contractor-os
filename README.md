@@ -158,9 +158,7 @@ stateDiagram-v2
     WON --> [*]
     LOST --> [*]
     
-    state PAUSED {
-        note "Can be triggered from any active state"
-    }
+    note right of PAUSED : Can be triggered from any active state
 ```
 
 ## LLM Router Fallback
