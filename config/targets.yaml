@@ -1,1 +1,31 @@
-﻿
+targeting:
+  sectors:
+    - "B2B SaaS"
+    - "Fintech"
+    - "Healthtech"
+    # - "E-commerce"
+  
+  company_types:
+    - "Startup"
+    - "Agency"
+    
+  locations:
+    - "United States"
+    - "Remote"
+    - "Europe"
+    
+  decision_maker_titles:
+    - "CTO"
+    - "VP of Engineering"
+    - "Founder"
+    - "CEO"
+    
+  employee_range:
+    min: 10
+    max: 200
+    
+  pain_signals:
+    - "hiring engineers"
+    - "slow delivery"
+    - "security compliance"
+    - "scaling issues"

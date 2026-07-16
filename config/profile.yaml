@@ -1,1 +1,30 @@
-﻿
+freelancer:
+  name: "Jane Doe"
+  title: "Senior Independent Software Engineer"
+  portfolio_url: "https://janedoe.example.com"
+  linkedin: "https://linkedin.com/in/janedoe"
+  email: "jane@example.com"
+
+services:
+  - name: "Security Audit"
+    description: "Comprehensive code and infrastructure security audit."
+    price_range: "$2,000 - $5,000"
+    delivery: "1-2 weeks"
+  - name: "Full-Stack Dev"
+    description: "End-to-end web application development."
+    price_range: "$5,000 - $15,000"
+    delivery: "4-8 weeks"
+  - name: "AI/ML Integration"
+    description: "Integrating LLMs and ML models into existing products."
+    price_range: "$4,000 - $10,000"
+    delivery: "3-6 weeks"
+  - name: "Automation & Scripting"
+    description: "Custom scripts to automate business workflows."
+    price_range: "$1,000 - $3,000"
+    delivery: "1 week"
+
+value_proposition: "I help fast-growing startups ship secure, scalable products faster without the overhead of a full-time hire."
+
+past_results:
+  - "Reduced AWS costs by 40% for a Series A startup."
+  - "Built an AI-powered onboarding flow that increased conversion by 25%."

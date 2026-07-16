@@ -1,0 +1,34 @@
+Metadata-Version: 2.4
+Name: contractor-os
+Version: 0.1.0
+Summary: Personal agentic system for finding and outreach to contract clients.
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: sqlalchemy[asyncio]>=2.0
+Requires-Dist: aiosqlite
+Requires-Dist: alembic
+Requires-Dist: apscheduler>=3.10
+Requires-Dist: langgraph
+Requires-Dist: langchain-core
+Requires-Dist: pydantic>=2
+Requires-Dist: pyyaml
+Requires-Dist: watchfiles
+Requires-Dist: httpx
+Requires-Dist: apify-client
+Requires-Dist: playwright
+Requires-Dist: feedparser
+Requires-Dist: python-telegram-bot
+Requires-Dist: jinja2
+Requires-Dist: python-dotenv
+Requires-Dist: resend
+Requires-Dist: tenacity
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: pytest-mock; extra == "dev"
+Requires-Dist: respx; extra == "dev"
+
+# ContractorOS
+Personal, locally-run, single-process agentic system for freelance client acquisition.

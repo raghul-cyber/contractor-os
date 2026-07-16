@@ -1,1 +1,10 @@
-﻿
+system:
+  batch_size: 50
+  cycle_interval_hours: 6
+  profiler:
+    min_fit_score: 0.3
+    concurrent_scrapes: 5
+  craft:
+    require_manual_approval: true
+  outreach:
+    dry_run: false
