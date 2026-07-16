@@ -5,7 +5,9 @@ from app.core.models import Base, Lead, ActivityLog, Run
 import app.modules.hunter.run as run_mod
 from app.modules.hunter.run import run_hunter
 
-@pytest.fixture
+import pytest_asyncio
+
+@pytest_asyncio.fixture
 async def temp_db_session_with_run(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
@@ -25,7 +27,7 @@ async def temp_db_session_with_run(monkeypatch):
     
     async with SessionLocal() as session:
         # Create a Run row to test run stats update
-        test_run = Run(status="RUNNING", leads_scraped=0)
+        test_run = Run(leads_scraped=0)
         session.add(test_run)
         await session.commit()
         
@@ -95,4 +97,5 @@ async def test_full_run_hunter(temp_db_session_with_run, monkeypatch):
     # Assert Run leads_scraped counter was incremented
     run_res = await session.execute(select(Run).where(Run.id == run_id))
     db_run = run_res.scalars().first()
+    await session.refresh(db_run)
     assert db_run.leads_scraped == 1

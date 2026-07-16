@@ -21,8 +21,10 @@ from sqlalchemy import select
 def test_normalize_domain(input_url, expected):
     assert normalize_domain(input_url) == expected
 
+import pytest_asyncio
+
 # 2. Async tests for DB insert/dedup
-@pytest.fixture
+@pytest_asyncio.fixture
 async def temp_db_session():
     # Use an in-memory SQLite DB for testing
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
