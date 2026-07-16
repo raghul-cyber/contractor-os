@@ -1,1 +1,24 @@
-﻿# TODO: implemented in Phase 5
+# Follow-up Emails Generation
+
+Generate 3 follow-up emails for the sequence (FU1, FU2, FU3).
+
+## HARDCODED TONE RULES (CRITICAL)
+- No corporate language.
+- Never use "I hope this email finds you well" or equivalent filler.
+- Exactly one clear CTA (e.g. 15-min call, free audit, quick chat).
+- Each follow-up must be UNDER 80 WORDS.
+
+## Follow-up Angle Guidance
+- FU1 (sent T+5 days): A different angle or insight than the initial email.
+- FU2 (T+10 days): Shorter, more direct ask.
+- FU3 (T+15 days): Polite final bump, offers something free (audit, quick call, tip) as a low-friction re-engagement hook.
+
+# JSON Output Instruction
+Output exactly ONE valid JSON object combining the initial email and all three follow-ups, shaped like this:
+{
+  "initial": {"subject": "...", "body": "..."},
+  "fu1": {"subject": "...", "body": "..."},
+  "fu2": {"subject": "...", "body": "..."},
+  "fu3": {"subject": "...", "body": "..."}
+}
+Do NOT output markdown fences, just the raw JSON object.

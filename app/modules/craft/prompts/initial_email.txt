@@ -1,1 +1,22 @@
-﻿# TODO: implemented in Phase 5
+# Initial Email Generation
+
+You are crafting a cold outreach initial email for a lead.
+
+## My Services (Sender Context)
+Name: {service_name}
+Description: {service_description}
+Price Range: {service_price}
+Value Proposition: {service_value_prop}
+
+## Lead Profile (Recipient Context)
+Company: {company_name}
+Domain: {domain}
+Profile Data (JSON):
+{profile_json}
+
+## HARDCODED TONE RULES (CRITICAL)
+- No corporate language.
+- Never use "I hope this email finds you well" or equivalent filler.
+- Must mention one SPECIFIC thing about the recipient's company (pulled from their profile_json's personalization_hooks or pain_points).
+- Exactly one clear CTA (e.g. 15-min call, free audit, quick chat).
+- Initial email must be UNDER 150 WORDS.
