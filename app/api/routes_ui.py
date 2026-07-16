@@ -37,9 +37,9 @@ async def dashboard(request: Request, status: Optional[str] = None):
             deals_with_lead.append({"deal": deal, "company": l.company_name})
             
         return templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
+            request=request,
+            name="dashboard.html",
+            context={
                 "stats": stats,
                 "leads": leads,
                 "deals": deals_with_lead,
@@ -56,9 +56,9 @@ async def get_lead_row(request: Request, lead_id: int):
             return HTMLResponse("<tr><td colspan='5'>Lead not found</td></tr>", status_code=404)
             
         return templates.TemplateResponse(
-            "lead_row.html",
-            {
-                "request": request,
+            request=request,
+            name="lead_row.html",
+            context={
                 "lead": lead
             }
         )
