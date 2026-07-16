@@ -8,3 +8,7 @@ system:
     require_manual_approval: true
   outreach:
     dry_run: false
+  hunter:
+    use_paid_leadscraper: false
+    # Verify exact actor ID if pipelinelabs/lead-scraper changes
+    leadscraper_actor_id: "pipelinelabs/lead-scraper"

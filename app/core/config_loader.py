@@ -76,12 +76,17 @@ class CraftSystemConfig(BaseModel):
 class OutreachSystemConfig(BaseModel):
     dry_run: bool
 
+class HunterSystemConfig(BaseModel):
+    use_paid_leadscraper: bool
+    leadscraper_actor_id: str
+
 class SystemConfig(BaseModel):
     batch_size: int
     cycle_interval_hours: int
     profiler: ProfilerSystemConfig
     craft: CraftSystemConfig
     outreach: OutreachSystemConfig
+    hunter: HunterSystemConfig
 
 class SystemRoot(BaseModel):
     system: SystemConfig
