@@ -52,8 +52,8 @@ flowchart TD
     D --> E[Outreach Agent]
     E --> F[CRM Agent]
     F --> G[Orchestrator Agent]
-    G -.loops back.-> B
-    F --> H{Reply or Interest Signal?}
+    G -. loops back .-> B
+    F --> H{"Reply or Interest Signal?"}
     H -->|Yes| I[Meeting Booked]
     I --> J[Proposal Sent]
     J --> K[Deal Closed]
@@ -68,24 +68,24 @@ The application is built as a **modular monolith** — it uses one Python proces
 
 ```mermaid
 flowchart TB
-    subgraph Config["Configuration"]
+    subgraph Config ["Configuration"]
         CFG["config/*.yaml<br/>profile - targets - outreach - system"]
     end
 
-    subgraph App["ContractorOS App - Single Process"]
+    subgraph App ["ContractorOS App - Single Process"]
         ORCH["Orchestrator<br/>LangGraph State Machine"]
         HUNT["Hunter Module"]
         PROF["Profiler Module"]
         CRAFT["Craft Module"]
         OUT["Outreach Module"]
         CRM["CRM Module"]
-        DB[("SQLite DB<br/>contractor_os.db")]
+        DB[(SQLite DB<br/>contractor_os.db)]
         ROUTER["LLM Router<br/>Groq to Ollama to Gemini to NVIDIA"]
         SCHED["APScheduler<br/>SQLite Jobstore"]
         API["FastAPI Dashboard and API"]
     end
 
-    subgraph External["External Services"]
+    subgraph External ["External Services"]
         LLM["External LLM APIs"]
         APIFY["Apify Actors"]
         SMTP["SMTP and IMAP"]
