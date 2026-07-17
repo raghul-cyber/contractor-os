@@ -1,31 +1,49 @@
 targeting:
   sectors:
-    - "B2B SaaS"
-    - "Fintech"
-    - "Healthtech"
-    # - "E-commerce"
-  
+    - "B2B SaaS (Series A+ and enterprise)"
+    - "E-commerce / DTC platforms at scale"
+    - "Healthcare / Healthtech (compliance-sensitive)"
+    - "HVAC / Field Service companies (ops automation buyers)"
+    - "Fintech (security/compliance overlap)"
+    - "Any company running SOC2/ISO 27001 compliance programs"
+
   company_types:
-    - "Startup"
-    - "Agency"
-    
+    - "Growth-stage (Series A-C)"
+    - "Mid-market / enterprise (200-2000 employees)"
+    - "Recently funded (signal from Crunchbase/TechCrunch)"
+
   locations:
     - "United States"
-    - "Remote"
-    - "Europe"
-    
+    - "United Kingdom"
+    - "India"
+
   decision_maker_titles:
     - "CTO"
-    - "VP of Engineering"
-    - "Founder"
-    - "CEO"
-    
+    - "VP Engineering"
+    - "Head of Engineering"
+    - "CISO"
+    - "Head of Product"
+    - "COO"
+    - "Director of IT"
+    - "Founder / Co-founder"
+
   employee_range:
-    min: 10
-    max: 200
-    
+    min: 50
+    max: 2000
+
   pain_signals:
-    - "hiring engineers"
-    - "slow delivery"
-    - "security compliance"
-    - "scaling issues"
+    - "manual workflows"
+    - "disconnected tools"
+    - "legacy system"
+    - "no dedicated security team"
+    - "SOC2 audit"
+    - "compliance readiness"
+    - "hiring AI engineer"
+    - "hiring DevOps"
+    - "scaling engineering team"
+    - "technical debt"
+    - "outdated CRM"
+    - "manual invoice processing"
+    - "customer support automation"
+    - "penetration testing"
+    - "cloud cost"

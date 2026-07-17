@@ -15,7 +15,7 @@ from app.modules.profiler.scrapers.news import scrape_google_news
 class MockConfig:
     class Targets:
         class Targeting:
-            pain_signals = ["slow", "expensive", "outdated"]
+            pain_signals = ["no dedicated security team", "hiring DevOps", "scaling engineering team"]
         targeting = Targeting()
     class System:
         class Profiler:
@@ -38,7 +38,7 @@ def test_score_fit(mock_targets_cfg):
         company_name="Test",
         tech_stack=[],
         recent_news="",
-        pain_points=["their process is slow and expensive"], # 2 matches
+        pain_points=["they have no dedicated security team and are hiring DevOps"], # 2 matches
         personalization_hooks=["hook"]
     )
     score_high = score_fit(profile_high, mock_targets_cfg.targets)
@@ -235,8 +235,8 @@ async def test_full_run_profiler(temp_db_session_with_3_leads, monkeypatch):
     class SmartMockRouter:
         async def call(self, prompt, **kwargs):
             if "Lead_Researched" in prompt:
-                # Provide valid JSON with pain signal overlap ("slow")
-                return """{"company_name": "Lead_Researched", "website": "1.com", "industry": null, "size": null, "location": null, "tech_stack": [], "recent_news": "", "pain_points": ["slow"], "decision_maker": null, "decision_maker_email": null, "decision_maker_title": null, "personalization_hooks": []}"""
+                # Provide valid JSON with pain signal overlap
+                return """{"company_name": "Lead_Researched", "website": "1.com", "industry": null, "size": null, "location": null, "tech_stack": [], "recent_news": "", "pain_points": ["hiring DevOps"], "decision_maker": null, "decision_maker_email": null, "decision_maker_title": null, "personalization_hooks": []}"""
             elif "Lead_LowFit" in prompt:
                 # Provide valid JSON with no overlap
                 return """{"company_name": "Lead_LowFit", "website": "2.com", "industry": null, "size": null, "location": null, "tech_stack": [], "recent_news": "", "pain_points": ["fast"], "decision_maker": null, "decision_maker_email": null, "decision_maker_title": null, "personalization_hooks": []}"""

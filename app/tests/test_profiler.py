@@ -12,7 +12,7 @@ import app.modules.profiler.run as profiler_run_mod
 class MockConfig:
     class Targets:
         class Targeting:
-            pain_signals = ["slow", "expensive", "outdated"]
+            pain_signals = ["no dedicated security team", "hiring DevOps", "scaling engineering team"]
         targeting = Targeting()
     class System:
         class Profiler:
@@ -44,11 +44,11 @@ def test_score_fit_high_fit(mock_targets_cfg):
         company_name="Test",
         tech_stack=[],
         recent_news="",
-        pain_points=["their process is slow and expensive"], # Overlaps "slow" and "expensive"
+        pain_points=["they have no dedicated security team and are hiring DevOps"], # Overlaps multiple targets
         personalization_hooks=["hook"]
     )
     score = score_fit(profile, mock_targets_cfg.targets)
-    assert score >= 0.3 # 2 matches * 0.34 = 0.68
+    assert score >= 0.3
 
 # 3. Synthesizer Retry Tests
 class FailingMockRouter:
