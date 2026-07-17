@@ -5,6 +5,9 @@ from app.core.models import Run, ActivityLog, Lead
 from sqlalchemy import select, update
 
 from .sources.apify_maps import scrape_google_maps
+from .sources.apify_jobboard_signals import scrape_job_boards
+from .sources.apify_crunchbase_public import scrape_crunchbase
+from .sources.directory_import import scrape_directories
 from .sources.apify_contact import extract_contacts
 from .sources.apify_leadscraper import scrape_leads
 from .sources.manual_import import import_from_csv
@@ -47,6 +50,67 @@ async def run_hunter(state: dict) -> dict:
         except Exception as e:
             logger.error(f"Apify Maps source failed: {e}")
             session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Apify Maps failed: {e}"))
+            
+        # 2. Apify Job Board Signals
+        if getattr(config.system.hunter, "use_jobboard_signals", False):
+            try:
+                jb_filters = {
+                    "pain_signals": getattr(config.targets.targeting, "pain_signals", []),
+                    "location": config.targets.targeting.locations[0] if getattr(config.targets.targeting, "locations", None) else "Global",
+                    "limit": 5
+                }
+                jb_results = await scrape_job_boards(jb_filters)
+                inserted_jb = 0
+                for raw in jb_results:
+                    if await insert_lead_if_new(session, raw):
+                        inserted_jb += 1
+                    else:
+                        total_skipped += 1
+                total_inserted += inserted_jb
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Job Boards: {len(jb_results)} found, {inserted_jb} inserted"))
+            except Exception as e:
+                logger.error(f"Apify Job Boards source failed: {e}")
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Job Boards failed: {e}"))
+                
+        # 3. Apify Crunchbase Public
+        if getattr(config.system.hunter, "use_crunchbase", False):
+            try:
+                cb_filters = {
+                    "sectors": config.targets.targeting.sectors,
+                    "limit": 10
+                }
+                cb_results = await scrape_crunchbase(cb_filters)
+                inserted_cb = 0
+                for raw in cb_results:
+                    if await insert_lead_if_new(session, raw):
+                        inserted_cb += 1
+                    else:
+                        total_skipped += 1
+                total_inserted += inserted_cb
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Crunchbase: {len(cb_results)} found, {inserted_cb} inserted"))
+            except Exception as e:
+                logger.error(f"Apify Crunchbase source failed: {e}")
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Crunchbase failed: {e}"))
+                
+        # 4. Directory Import
+        if getattr(config.system.hunter, "use_directories", False):
+            try:
+                dir_filters = {
+                    "sectors": config.targets.targeting.sectors,
+                    "limit": 10
+                }
+                dir_results = await scrape_directories(dir_filters)
+                inserted_dir = 0
+                for raw in dir_results:
+                    if await insert_lead_if_new(session, raw):
+                        inserted_dir += 1
+                    else:
+                        total_skipped += 1
+                total_inserted += inserted_dir
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Directories: {len(dir_results)} found, {inserted_dir} inserted"))
+            except Exception as e:
+                logger.error(f"Apify Directories source failed: {e}")
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Directories failed: {e}"))
             
         # 2. Apify Contact (Backfill missing emails)
         try:

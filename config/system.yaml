@@ -14,3 +14,6 @@ system:
     # Verify exact actor ID if pipelinelabs/lead-scraper changes
     leadscraper_actor_id: "pipelinelabs/lead-scraper"
     weekly_lead_target: 100
+    use_jobboard_signals: true
+    use_crunchbase: true
+    use_directories: true

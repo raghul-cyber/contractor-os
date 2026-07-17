@@ -83,6 +83,9 @@ class OutreachSystemConfig(BaseModel):
 class HunterSystemConfig(BaseModel):
     use_paid_leadscraper: bool
     leadscraper_actor_id: str
+    use_jobboard_signals: bool = True
+    use_crunchbase: bool = True
+    use_directories: bool = True
 
 class SystemConfig(BaseModel):
     batch_size: int
