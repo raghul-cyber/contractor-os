@@ -209,11 +209,11 @@ class NvidiaProvider(BaseProvider):
 class RouterConfig(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
     
-    groq_api_key: str = ""
-    gemini_api_key: str = ""
-    nvidia_api_key: str = ""
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen2.5:14b"
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    nvidia_api_key: str = os.getenv("NVIDIA_API_KEY", "")
+    ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    ollama_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
     providers_override: Optional[Dict[str, BaseProvider]] = None
 
 class LLMRouter:

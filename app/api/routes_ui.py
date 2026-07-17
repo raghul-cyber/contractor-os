@@ -62,3 +62,24 @@ async def get_lead_row(request: Request, lead_id: int):
                 "lead": lead
             }
         )
+
+@router.get("/ui/leads/{lead_id}/sequence", response_class=HTMLResponse)
+async def get_lead_sequence(request: Request, lead_id: int):
+    from app.core.models import OutreachSequence
+    async with get_session() as session:
+        result = await session.execute(select(OutreachSequence).where(OutreachSequence.lead_id == lead_id).order_by(OutreachSequence.id))
+        sequences = result.scalars().all()
+        if not sequences:
+            return HTMLResponse("<div class='p-4 text-gray-500'>No email sequences generated for this lead.</div>")
+            
+        html = "<div class='p-4 space-y-4 border-l-4 border-blue-200'>"
+        for idx, seq in enumerate(sequences):
+            html += f"<div class='bg-white p-3 rounded shadow-sm'>"
+            html += f"<div class='font-bold text-sm mb-1 capitalize'>{seq.sequence_type} (Step {idx+1}) - {seq.status}</div>"
+            html += f"<div class='text-sm mb-2'><strong>Subject:</strong> {seq.subject}</div>"
+            body_fmt = seq.body.replace('\\n', '<br>')
+            html += f"<div class='text-sm text-gray-700 whitespace-pre-wrap'>{body_fmt}</div>"
+            html += f"</div>"
+        html += "</div>"
+        
+        return HTMLResponse(html)

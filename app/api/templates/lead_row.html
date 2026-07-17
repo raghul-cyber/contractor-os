@@ -17,7 +17,14 @@
     </td>
     <td class="p-2">{{ (lead.fit_score or 0) | round(2) }}</td>
     <td class="p-2 text-gray-500">{{ lead.updated_at[:10] }}</td>
-    <td class="p-2">
+    <td class="p-2 space-x-2">
+        <button 
+            hx-get="/ui/leads/{{ lead.id }}/sequence" 
+            hx-target="#seq-{{ lead.id }}" 
+            hx-swap="innerHTML"
+            class="text-blue-500 hover:underline text-xs">
+            View Emails
+        </button>
         {% if lead.status == 'DRAFTED' %}
         <button 
             hx-post="/api/leads/{{ lead.id }}/approve-sequence" 
@@ -29,4 +36,7 @@
         </button>
         {% endif %}
     </td>
+</tr>
+<tr class="bg-gray-50">
+    <td colspan="5" id="seq-{{ lead.id }}" class="p-0"></td>
 </tr>

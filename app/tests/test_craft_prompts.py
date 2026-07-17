@@ -6,10 +6,13 @@ from sqlalchemy import select, text
 from app.core.models import Base, Lead, ActivityLog, OutreachSequence
 import app.modules.craft.run as craft_run_mod
 
-class MockProfile:
+class MockService:
     name = "Test Contractor"
     description = "Test Desc"
     price_range = "$1k"
+
+class MockProfile:
+    services = [MockService()]
     value_proposition = "Test Value"
 
 class MockConfig:

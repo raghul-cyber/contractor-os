@@ -1,30 +1,51 @@
 freelancer:
-  name: "Jane Doe"
-  title: "Senior Independent Software Engineer"
-  portfolio_url: "https://janedoe.example.com"
-  linkedin: "https://linkedin.com/in/janedoe"
-  email: "jane@example.com"
+  name: "AhiXLight"
+  title: "AI Software Engineering & Enterprise Automation"
+  portfolio_url: "ahixlight.com"
+  linkedin: "linkedin.com/company/ahixlight"
+  email: "ahilightfreelance@gmail.com"
+
+value_proposition: >
+  AhiXLight builds intelligent products and delivers high-performance
+  engineering for startups and enterprises — AI agents and automation,
+  custom software, and security/compliance systems — replacing manual,
+  disconnected workflows with software that scales. SOC2 compliant, ISO 27001
+  aligned. Fixed-scope 6-week discovery sprints deliver guaranteed working
+  software, not open-ended hourly billing.
 
 services:
-  - name: "Security Audit"
-    description: "Comprehensive code and infrastructure security audit."
-    price_range: "$2,000 - $5,000"
-    delivery: "1-2 weeks"
-  - name: "Full-Stack Dev"
-    description: "End-to-end web application development."
-    price_range: "$5,000 - $15,000"
-    delivery: "4-8 weeks"
-  - name: "AI/ML Integration"
-    description: "Integrating LLMs and ML models into existing products."
-    price_range: "$4,000 - $10,000"
-    delivery: "3-6 weeks"
-  - name: "Automation & Scripting"
-    description: "Custom scripts to automate business workflows."
-    price_range: "$1,000 - $3,000"
-    delivery: "1 week"
+  - name: "AI Agents & Agentic Automation"
+    description: "Production-grade multi-agent systems (MCP/A2A-based),
+      AI workflow automation, voice AI agents, and AI sales/lead qualification
+      built around your actual approval requirements — not a generic no-code
+      template."
+    price_range: "Custom — scoped per discovery sprint"
+    delivery: "6-week guaranteed-working-software pilot, then phased build-out"
 
-value_proposition: "I help fast-growing startups ship secure, scalable products faster without the overhead of a full-time hire."
+  - name: "Custom Software & SaaS Development"
+    description: "Full-stack, MVP, SaaS, and legacy modernization engineering —
+      one team across backend, frontend, and infrastructure, architected around
+      how the business actually operates."
+    price_range: "Custom — scoped per discovery sprint"
+    delivery: "6-week pilot to production-track build"
+
+  - name: "Cybersecurity & Compliance"
+    description: "Secure SDLC, penetration testing (web/API/mobile), OWASP Top
+      10:2025 hardening, DevSecOps, supply chain security, and continuous
+      compliance readiness (SOC2 / ISO 27001)."
+    price_range: "Custom — scoped per audit/engagement"
+    delivery: "Varies by engagement; audits typically 1-3 weeks"
+
+  - name: "Data, Analytics & Cloud/DevOps"
+    description: "Data pipelines, KPI dashboards, predictive analytics,
+      compliant web-scraping/data-extraction systems, CI/CD, Kubernetes,
+      and cloud cost optimization."
+    price_range: "Custom — scoped per engagement"
+    delivery: "Varies by engagement"
 
 past_results:
-  - "Reduced AWS costs by 40% for a Series A startup."
-  - "Built an AI-powered onboarding flow that increased conversion by 25%."
+  - "CyberFortress — unified intelligent security product, shipped"
+  - "AstralFlowly — project & event management product, shipped"
+  - "SOC2 compliant, ISO 27001 aligned engineering practice"
+  - "Fixed-scope 6-week discovery sprint model — working software guaranteed,
+     not hourly billing"

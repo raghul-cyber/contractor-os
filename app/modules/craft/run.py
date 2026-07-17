@@ -58,9 +58,9 @@ async def run_craft(state: dict) -> dict:
             try:
                 # 1. Compose Prompt
                 initial_prompt = initial_prompt_tmpl.format(
-                    service_name=my_profile.name,
-                    service_description=my_profile.description,
-                    service_price=my_profile.price_range,
+                    service_name=my_profile.services[0].name,
+                    service_description=my_profile.services[0].description,
+                    service_price=my_profile.services[0].price_range,
                     service_value_prop=my_profile.value_proposition,
                     company_name=lead.company_name,
                     domain=lead.domain,

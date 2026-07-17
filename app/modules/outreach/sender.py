@@ -36,10 +36,38 @@ async def _execute_send(to: str, subject: str, body: str, backend: str):
         # raise Exception("Simulated Resend Network Error")
         return {"id": "resend_12345", "status": "sent"}
     else:
-        # Simulate SMTP call
-        logger.debug(f"Attempting send via SMTP to {to}")
-        # raise Exception("Simulated SMTP Network Error")
-        return {"id": "smtp_12345", "status": "sent"}
+        logger.debug(f"Attempting real send via SMTP to {to}")
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        import os
+        
+        smtp_host = os.getenv("SMTP_HOST")
+        smtp_port = int(os.getenv("SMTP_PORT", 587))
+        smtp_user = os.getenv("SMTP_USER")
+        smtp_pass = os.getenv("SMTP_PASS")
+        
+        if not all([smtp_host, smtp_port, smtp_user, smtp_pass]):
+            logger.error("Missing SMTP credentials in .env")
+            raise SendFailureError("Missing SMTP credentials")
+            
+        msg = MIMEMultipart()
+        msg["From"] = smtp_user
+        msg["To"] = to
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+        
+        try:
+            server = smtplib.SMTP(smtp_host, smtp_port)
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+            server.quit()
+            logger.info(f"Successfully sent email via SMTP to {to}")
+            return {"id": f"smtp_{int(datetime.utcnow().timestamp())}", "status": "sent"}
+        except Exception as e:
+            logger.error(f"Failed to send email via SMTP: {e}")
+            raise SendFailureError(f"SMTP Error: {e}")
 
 
 async def send_email(to: str, subject: str, body: str, dry_run: bool = False) -> dict:
