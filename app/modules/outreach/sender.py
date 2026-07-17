@@ -87,7 +87,7 @@ async def send_email(to: str, subject: str, body: str, sending_identity: str, dr
     # If no session passed, manage our own (for standalone calls)
     if session is None:
         async with get_session() as new_session:
-            today_str = date.today().isoformat()
+            today_str = datetime.utcnow().date().isoformat()
             res = await new_session.execute(
                 select(func.count(EmailEvent.id))
                 .where(EmailEvent.event_type == "sent")
@@ -96,7 +96,7 @@ async def send_email(to: str, subject: str, body: str, sending_identity: str, dr
             )
             sent_today = res.scalar_one()
     else:
-        today_str = date.today().isoformat()
+        today_str = datetime.utcnow().date().isoformat()
         res = await session.execute(
             select(func.count(EmailEvent.id))
             .where(EmailEvent.event_type == "sent")
