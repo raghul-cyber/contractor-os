@@ -18,13 +18,21 @@ class MockConfig:
         class Craft:
             require_manual_approval = False
         craft = Craft()
-        class Outreach:
+        class OutreachSystem:
             dry_run = True
-            daily_send_limit = 2
-            follow_up_intervals_days = [5, 10, 15]
             send_backend = "smtp"
-        outreach = Outreach()
+        outreach = OutreachSystem()
     system = System()
+    
+    class OutreachRoot:
+        class MockIdentity:
+            def __init__(self, email, limit):
+                self.email = email
+                self.daily_send_limit = limit
+        
+        sending_identities = [MockIdentity("test1@ahixlight.com", 2)]
+        follow_up_intervals_days = [5, 10, 15]
+    outreach = OutreachRoot()
 
 @pytest_asyncio.fixture
 async def temp_db_session_outreach(monkeypatch):
@@ -45,6 +53,10 @@ async def temp_db_session_outreach(monkeypatch):
     monkeypatch.setattr(reply_det_mod, "get_session", MockSessionContext)
     import app.modules.outreach.sender as sender_mod
     monkeypatch.setattr(sender_mod, "get_session", MockSessionContext)
+    
+    async def fake_execute_send(*args, **kwargs):
+        return {"id": "fake_id", "status": "sent"}
+    monkeypatch.setattr(sender_mod, "_execute_send", fake_execute_send)
     
     async with SessionLocal() as session:
         yield session

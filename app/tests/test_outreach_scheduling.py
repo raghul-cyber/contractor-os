@@ -120,7 +120,7 @@ async def test_full_cycle_scheduling(temp_db_session_outreach, monkeypatch):
     await session.refresh(lead)
     assert lead.status == "SENT"
     
-    seqs_res = await session.execute(select(OutreachSequence).where(OutreachSequence.lead_id == lead.id))
+    seqs_res = await session.execute(select(OutreachSequence).where(OutreachSequence.lead_id == lead_id))
     seqs = {s.sequence_type: s for s in seqs_res.scalars().all()}
     
     assert seqs["initial"].status == "sent"
@@ -392,3 +392,139 @@ async def test_round_robin_identities(temp_db_session_outreach, monkeypatch):
     assert len(fu_seqs) == 6
     for seq in fu_seqs:
         assert seq.sending_identity is not None
+
+@pytest.mark.asyncio
+async def test_volume_limit_check(temp_db_session_outreach, monkeypatch):
+    """
+    Test seeding 5 configured sending identities with daily_send_limit=15 each, 
+    and 100 queued outreach_sequences rows due 'now' spread across 40 different leads. 
+    Run check_due_followups_job() in dry_run mode. 
+    Assert: no identity's per-day sent count exceeds 15 in this run, 
+    total sent this run does not exceed 75, and the remainder stay queued.
+    """
+    session = temp_db_session_outreach
+    
+    class VolumeConfig:
+        class System:
+            batch_size = 100
+            class Craft:
+                require_manual_approval = False
+            craft = Craft()
+            class Outreach:
+                dry_run = True
+                sending_identities = [
+                    MockIdentity(f"id{i}@ahixlight.com", 15) for i in range(5)
+                ]
+                follow_up_intervals_days = [5, 10, 15]
+                send_backend = "smtp"
+            outreach = Outreach()
+        system = System()
+        outreach = System.Outreach()
+
+    monkeypatch.setattr(outreach_run_mod, "get_config", lambda: VolumeConfig())
+    monkeypatch.setattr(sender_mod, "get_config", lambda: VolumeConfig())
+
+    # Add 40 leads
+    seq_count = 0
+    for i in range(40):
+        l = Lead(company_name=f"L{i}", domain=f"{i}.com", status="SENT", email=f"{i}@test.com", source="test")
+        session.add(l)
+        await session.flush()
+        
+        num_fu = 3 if i < 20 else 2
+        for j in range(num_fu):
+            session.add(OutreachSequence(
+                lead_id=l.id, 
+                sequence_type=f"fu{j+1}",
+                subject="S", 
+                body="B", 
+                status="queued",
+                scheduled_at=datetime.utcnow().isoformat(),
+                sending_identity=f"id{seq_count % 5}@ahixlight.com"
+            ))
+            seq_count += 1
+            
+    await session.commit()
+    
+    # Run the job
+    await outreach_run_mod.check_due_followups_job()
+    
+    session.expire_all()
+    
+    # Assertions
+    events_res = await session.execute(select(EmailEvent).where(EmailEvent.event_type == "sent"))
+    events = events_res.scalars().all()
+    assert len(events) == 75
+    
+    counts = {}
+    for ev in events:
+        counts[ev.sending_identity] = counts.get(ev.sending_identity, 0) + 1
+        
+    for k, v in counts.items():
+        assert v <= 15
+        
+    queued_res = await session.execute(select(OutreachSequence).where(OutreachSequence.status == "queued"))
+    queued_seqs = queued_res.scalars().all()
+    assert len(queued_seqs) == 25
+
+
+@pytest.mark.asyncio
+async def test_identity_inheritance(temp_db_session_outreach, monkeypatch):
+    """
+    Test seeding one lead through its full 4-email sequence and assert 
+    all 4 outreach_sequences rows end up with the identical sending_identity.
+    """
+    session = temp_db_session_outreach
+    
+    class InheritanceConfig:
+        class System:
+            batch_size = 10
+            class Craft:
+                require_manual_approval = True
+            craft = Craft()
+            class Outreach:
+                dry_run = True
+                sending_identities = [
+                    MockIdentity("id_inherit@ahixlight.com", 15)
+                ]
+                follow_up_intervals_days = [5, 10, 15]
+                send_backend = "smtp"
+            outreach = Outreach()
+        system = System()
+        outreach = System.Outreach()
+
+    monkeypatch.setattr(outreach_run_mod, "get_config", lambda: InheritanceConfig())
+    monkeypatch.setattr(sender_mod, "get_config", lambda: InheritanceConfig())
+    
+    # Create lead
+    l = Lead(company_name="Inherit", domain="inherit.com", status="DRAFTED", email="test@test.com", source="test")
+    session.add(l)
+    await session.flush()
+    
+    # Initial sequence + drafts
+    session.add(OutreachSequence(lead_id=l.id, sequence_type="initial", subject="S", body="B", status="approved"))
+    session.add(OutreachSequence(lead_id=l.id, sequence_type="fu1", subject="S", body="B", status="draft"))
+    session.add(OutreachSequence(lead_id=l.id, sequence_type="fu2", subject="S", body="B", status="draft"))
+    session.add(OutreachSequence(lead_id=l.id, sequence_type="fu3", subject="S", body="B", status="draft"))
+    await session.commit()
+    
+    l_id = l.id
+    
+    # Run initial
+    await outreach_run_mod.run_outreach({})
+    
+    session.expire_all()
+    
+    # Check initial assigned identity and queued fu1, fu2, fu3 with same identity
+    seqs_res = await session.execute(select(OutreachSequence).where(OutreachSequence.lead_id == l_id))
+    seqs = seqs_res.scalars().all()
+    
+    assert len(seqs) == 4
+    
+    identities = set()
+    for seq in seqs:
+        identities.add(seq.sending_identity)
+        
+    assert len(identities) == 1
+    assert list(identities)[0] == "id_inherit@ahixlight.com"
+

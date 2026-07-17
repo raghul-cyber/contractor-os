@@ -11,6 +11,16 @@ class MockProfile:
     description = "Test Desc"
     price_range = "$1k"
     value_proposition = "Test Value"
+    class MockService:
+        def __init__(self, name, description, price_range):
+            self.name = name
+            self.description = description
+            self.price_range = price_range
+            
+    services = [
+        MockService("S1", "D1", "$1k"),
+        MockService("S2", "D2", "$2k")
+    ]
 
 class MockConfig:
     class System:

@@ -41,7 +41,11 @@ class MockConfig:
         name = "Mock"
         description = "Desc"
         price_range = "$1k - $5k"
-        services = []
+        class MockService:
+            name = "S1"
+            description = "D1"
+            price_range = "$1k - $2k"
+        services = [MockService()]
         value_proposition = "Value"
     profile = Profile()
     class Targets:
@@ -83,6 +87,11 @@ async def test_full_happy_path_integration(e2e_session, monkeypatch):
     monkeypatch.setattr(profiler_run, "get_config", lambda: MockConfig())
     monkeypatch.setattr(craft_run, "get_config", lambda: MockConfig())
     monkeypatch.setattr(outreach_run, "get_config", lambda: MockConfig())
+    import app.modules.outreach.sender as sender_mod
+    monkeypatch.setattr(sender_mod, "get_config", lambda: MockConfig())
+    async def fake_execute_send(*args, **kwargs):
+        return {"id": "fake_id", "status": "sent"}
+    monkeypatch.setattr(sender_mod, "_execute_send", fake_execute_send)
     
     # 1. Seed RAW leads
     l1 = Lead(company_name="CorpA", domain="corpa.com", status="RAW", source="test")

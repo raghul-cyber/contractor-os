@@ -70,7 +70,7 @@ async def _execute_send(to: str, subject: str, body: str, backend: str, sending_
             raise SendFailureError(f"SMTP Error: {e}")
 
 
-async def send_email(to: str, subject: str, body: str, sending_identity: str, dry_run: bool = False) -> dict:
+async def send_email(to: str, subject: str, body: str, sending_identity: str, dry_run: bool = False, session=None) -> dict:
     """
     Sends an email enforcing daily limits per identity and dry_run.
     """
@@ -84,8 +84,18 @@ async def send_email(to: str, subject: str, body: str, sending_identity: str, dr
                 daily_limit = identity.daily_send_limit
                 break
     
-    async with get_session() as session:
-        # We query how many 'sent' events occurred today for this identity
+    # If no session passed, manage our own (for standalone calls)
+    if session is None:
+        async with get_session() as new_session:
+            today_str = date.today().isoformat()
+            res = await new_session.execute(
+                select(func.count(EmailEvent.id))
+                .where(EmailEvent.event_type == "sent")
+                .where(func.date(EmailEvent.timestamp) == today_str)
+                .where(EmailEvent.sending_identity == sending_identity)
+            )
+            sent_today = res.scalar_one()
+    else:
         today_str = date.today().isoformat()
         res = await session.execute(
             select(func.count(EmailEvent.id))
@@ -95,9 +105,9 @@ async def send_email(to: str, subject: str, body: str, sending_identity: str, dr
         )
         sent_today = res.scalar_one()
         
-        if sent_today >= daily_limit:
-            logger.warning(f"Daily send limit ({daily_limit}) reached for identity {sending_identity}. Cannot send to {to}.")
-            raise DailyLimitReachedError("Daily send limit reached")
+    if sent_today >= daily_limit:
+        logger.warning(f"Daily send limit ({daily_limit}) reached for identity {sending_identity}. Cannot send to {to}.")
+        raise DailyLimitReachedError("Daily send limit reached")
 
     # 2. Check dry_run globally or explicitly
     if hasattr(config.system, "outreach") and hasattr(config.system.outreach, "dry_run"):

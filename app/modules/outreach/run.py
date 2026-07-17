@@ -82,7 +82,8 @@ async def run_outreach(state: dict) -> dict:
                     subject=initial_seq.subject,
                     body=initial_seq.body,
                     sending_identity=chosen_identity,
-                    dry_run=False
+                    dry_run=False,
+                    session=session
                 )
                 
                 now_str = datetime.utcnow().isoformat()
@@ -179,7 +180,8 @@ async def check_due_followups_job():
                     subject=seq.subject,
                     body=seq.body,
                     sending_identity=identity_to_use,
-                    dry_run=False
+                    dry_run=False,
+                    session=session
                 )
                 
                 seq.status = "sent"

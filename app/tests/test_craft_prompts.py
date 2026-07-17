@@ -7,9 +7,10 @@ from app.core.models import Base, Lead, ActivityLog, OutreachSequence
 import app.modules.craft.run as craft_run_mod
 
 class MockService:
-    name = "Test Contractor"
-    description = "Test Desc"
-    price_range = "$1k"
+    def __init__(self):
+        self.name = "Test Contractor"
+        self.description = "Test Desc"
+        self.price_range = "$1k"
 
 class MockProfile:
     services = [MockService()]
