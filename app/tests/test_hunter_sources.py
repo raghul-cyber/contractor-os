@@ -61,6 +61,16 @@ async def test_jobboard_signals_empty_signals():
     assert client.mock_actor.attempts == 0
 
 @pytest.mark.asyncio
+async def test_jobboard_signals_retry_failure():
+    client = MockApifyClient(failure_count=5)
+    filters = {"pain_signals": ["DevOps"]}
+    
+    with pytest.raises(TimeoutError):
+        await scrape_job_boards(filters, client=client)
+    
+    assert client.mock_actor.attempts == 3
+
+@pytest.mark.asyncio
 async def test_crunchbase_public():
     items = [{"name": "FundedCo", "domain": "funded.com", "locationCity": "SF", "categories": ["SaaS"], "lastFundingType": "Series A", "lastFundingAmount": "$10M"}]
     client = MockApifyClient(failure_count=0, items=items)
@@ -76,6 +86,16 @@ async def test_crunchbase_public():
     assert "$10M" in results[0]["decision_maker_note"]
 
 @pytest.mark.asyncio
+async def test_crunchbase_retry_failure():
+    client = MockApifyClient(failure_count=5)
+    filters = {"sectors": ["SaaS"]}
+    
+    with pytest.raises(TimeoutError):
+        await scrape_crunchbase(filters, client=client)
+    
+    assert client.mock_actor.attempts == 3
+
+@pytest.mark.asyncio
 async def test_directory_import():
     items = [{"companyName": "Agency1", "website": "ag1.com", "location": "NY", "category": "Software"}]
     client = MockApifyClient(failure_count=0, items=items)
@@ -87,3 +107,13 @@ async def test_directory_import():
     assert results[0]["company_name"] == "Agency1"
     assert results[0]["website"] == "ag1.com"
     assert results[0]["source"] == "apify_directory"
+
+@pytest.mark.asyncio
+async def test_directory_retry_failure():
+    client = MockApifyClient(failure_count=5)
+    filters = {"sectors": ["Software"]}
+    
+    with pytest.raises(TimeoutError):
+        await scrape_directories(filters, client=client)
+    
+    assert client.mock_actor.attempts == 3
