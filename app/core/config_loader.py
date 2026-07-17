@@ -55,10 +55,14 @@ class NotificationsConfig(BaseModel):
     telegram_chat_id: str
     discord_webhook: str
 
+class SendingIdentityConfig(BaseModel):
+    email: str
+    daily_send_limit: int
+
 class OutreachRoot(BaseModel):
     sequence: SequenceConfig
     max_follow_ups: int
-    daily_send_limit: int
+    sending_identities: List[SendingIdentityConfig]
     send_window_hours: List[int]
     randomize_send_time: bool
     reply_detection: ReplyDetectionConfig

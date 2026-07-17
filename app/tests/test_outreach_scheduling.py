@@ -13,6 +13,11 @@ import app.modules.outreach.reply_detector as reply_det_mod
 import app.modules.outreach.sender as sender_mod
 from app.core.scheduler import get_scheduler, register_jobs
 
+class MockIdentity:
+    def __init__(self, email, limit):
+        self.email = email
+        self.daily_send_limit = limit
+
 class MockConfig:
     class System:
         batch_size = 5
@@ -22,7 +27,7 @@ class MockConfig:
         craft = Craft()
         class Outreach:
             dry_run = True
-            daily_send_limit = 20
+            sending_identities = [MockIdentity("default@ahixlight.com", 20)]
             follow_up_intervals_days = [5, 10, 15]
             send_backend = "smtp"
         outreach = Outreach()
@@ -30,7 +35,13 @@ class MockConfig:
 
 @pytest_asyncio.fixture
 async def temp_db_session_outreach(monkeypatch):
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    import tempfile
+    import os
+    
+    db_fd, db_path = tempfile.mkstemp(suffix=".db")
+    os.close(db_fd)
+    
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -43,12 +54,23 @@ async def temp_db_session_outreach(monkeypatch):
         async def __aexit__(self, exc_type, exc, tb):
             await self.session.close()
 
+    async def fake_execute_send(*args, **kwargs):
+        return {"id": "fake_id", "status": "sent"}
+        
+    monkeypatch.setattr(sender_mod, "_execute_send", fake_execute_send)
     monkeypatch.setattr(outreach_run_mod, "get_session", MockSessionContext)
     monkeypatch.setattr(reply_det_mod, "get_session", MockSessionContext)
     monkeypatch.setattr(sender_mod, "get_session", MockSessionContext)
+    monkeypatch.setattr(sender_mod, "get_config", lambda: MockConfig())
     
     async with SessionLocal() as session:
         yield session
+        
+    await engine.dispose()
+    try:
+        os.remove(db_path)
+    except:
+        pass
 
 # ---------------------------------------------------------
 # 1. dry_run guarantee test
@@ -66,7 +88,7 @@ async def test_dry_run_guarantee(temp_db_session_outreach, monkeypatch):
         
     monkeypatch.setattr(sender_mod, "_execute_send", fake_execute_send)
     
-    res = await sender_mod.send_email(to="test@test.com", subject="S", body="B", dry_run=True)
+    res = await sender_mod.send_email(to="test@test.com", subject="S", body="B", sending_identity="default@ahixlight.com", dry_run=True)
     
     assert res["status"] == "sent"
     assert res.get("dry_run") is True
@@ -151,11 +173,12 @@ async def test_send_limit_enforcement(temp_db_session_outreach, monkeypatch):
             batch_size = 10
             class Outreach:
                 dry_run = True
-                daily_send_limit = 3
+                sending_identities = [MockIdentity("default@ahixlight.com", 3)]
                 follow_up_intervals_days = [5, 10, 15]
                 send_backend = "smtp"
             outreach = Outreach()
         system = System()
+        outreach = System.Outreach()
         
     monkeypatch.setattr(outreach_run_mod, "get_config", lambda: LimitConfig())
     monkeypatch.setattr(sender_mod, "get_config", lambda: LimitConfig())
@@ -298,3 +321,74 @@ async def test_ghosted_transition(temp_db_session_outreach, monkeypatch):
     
     assert l_ghost.status == "GHOSTED"
     assert l_recent.status == "FU3_SENT"
+
+# ---------------------------------------------------------
+# 8. Round-Robin Identity Limit Test
+# ---------------------------------------------------------
+@pytest.mark.asyncio
+async def test_round_robin_identities(temp_db_session_outreach, monkeypatch):
+    session = temp_db_session_outreach
+    
+    class RoundRobinConfig:
+        class System:
+            batch_size = 20
+            class Craft:
+                require_manual_approval = True
+            craft = Craft()
+            class Outreach:
+                dry_run = True
+                sending_identities = [
+                    MockIdentity("id1@ahixlight.com", 2),
+                    MockIdentity("id2@ahixlight.com", 2),
+                    MockIdentity("id3@ahixlight.com", 2)
+                ]
+                follow_up_intervals_days = [5, 10, 15]
+                send_backend = "smtp"
+            outreach = Outreach()
+        system = System()
+        outreach = System.Outreach()
+        
+    monkeypatch.setattr(outreach_run_mod, "get_config", lambda: RoundRobinConfig())
+    monkeypatch.setattr(sender_mod, "get_config", lambda: RoundRobinConfig())
+        
+    # Add 10 leads and sequences
+    for i in range(10):
+        l = Lead(company_name=f"L{i}", domain=f"{i}.com", status="DRAFTED", email=f"{i}@test.com", source="test")
+        session.add(l)
+        await session.flush()
+        session.add(OutreachSequence(lead_id=l.id, sequence_type="initial", subject="S", body="B", status="approved"))
+        session.add(OutreachSequence(lead_id=l.id, sequence_type="fu1", subject="S", body="B", status="draft"))
+        session.add(OutreachSequence(lead_id=l.id, sequence_type="fu2", subject="S", body="B", status="draft"))
+        session.add(OutreachSequence(lead_id=l.id, sequence_type="fu3", subject="S", body="B", status="draft"))
+    await session.commit()
+    
+    await outreach_run_mod.run_outreach({})
+    
+    # Should send exactly 6 emails total (3 identities * 2 limit)
+    events_res = await session.execute(select(EmailEvent).where(EmailEvent.event_type == "sent"))
+    events = events_res.scalars().all()
+    
+    assert len(events) == 6
+    
+    counts = {}
+    for ev in events:
+        counts[ev.sending_identity] = counts.get(ev.sending_identity, 0) + 1
+        
+    assert counts.get("id1@ahixlight.com", 0) == 2
+    assert counts.get("id2@ahixlight.com", 0) == 2
+    assert counts.get("id3@ahixlight.com", 0) == 2
+    
+    # Check that initial sequences saved the identities
+    seqs_res = await session.execute(select(OutreachSequence).where(OutreachSequence.sequence_type == "initial").where(OutreachSequence.status == "sent"))
+    seqs = seqs_res.scalars().all()
+    
+    assert len(seqs) == 6
+    for seq in seqs:
+        assert seq.sending_identity is not None
+        
+    # Check followups also got identities
+    fu_res = await session.execute(select(OutreachSequence).where(OutreachSequence.sequence_type == "fu1").where(OutreachSequence.status == "queued"))
+    fu_seqs = fu_res.scalars().all()
+    assert len(fu_seqs) == 6
+    for seq in fu_seqs:
+        assert seq.sending_identity is not None

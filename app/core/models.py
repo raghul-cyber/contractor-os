@@ -68,6 +68,7 @@ class OutreachSequence(Base):
     status: Mapped[str] = mapped_column(Text, nullable=False, default="draft")
     scheduled_at: Mapped[Optional[str]] = mapped_column(Text)
     sent_at: Mapped[Optional[str]] = mapped_column(Text)
+    sending_identity: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(Text, nullable=False, default=func.datetime('now'))
 
     __table_args__ = (
@@ -85,6 +86,7 @@ class EmailEvent(Base):
     event_type: Mapped[str] = mapped_column(Text, nullable=False)
     sentiment: Mapped[Optional[str]] = mapped_column(Text)
     raw_snippet: Mapped[Optional[str]] = mapped_column(Text)
+    sending_identity: Mapped[Optional[str]] = mapped_column(Text)
     timestamp: Mapped[str] = mapped_column(Text, nullable=False, default=func.datetime('now'))
 
     __table_args__ = (

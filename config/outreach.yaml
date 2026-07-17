@@ -2,9 +2,20 @@ sequence:
   follow_up_intervals_days: [5, 10, 15]
 
 max_follow_ups: 3
-daily_send_limit: 20
 send_window_hours: [9, 18]
 randomize_send_time: true
+
+sending_identities:
+  - email: "hello@ahixlight.com"
+    daily_send_limit: 15
+  - email: "david@ahixlight.com"
+    daily_send_limit: 15
+  - email: "team@ahixlight.com"
+    daily_send_limit: 15
+  - email: "growth@ahixlight.com"
+    daily_send_limit: 15
+  - email: "partners@ahixlight.com"
+    daily_send_limit: 15
 
 reply_detection:
   imap_poll_interval_minutes: 120

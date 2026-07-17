@@ -24,7 +24,7 @@ class SendFailureError(Exception):
 from tenacity import wait_fixed
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(300), reraise=True)
-async def _execute_send(to: str, subject: str, body: str, backend: str):
+async def _execute_send(to: str, subject: str, body: str, backend: str, sending_identity: str):
     """
     Simulates sending through Resend or SMTP based on the backend setting.
     This will actually throw if network is down or credentials fail.
@@ -52,7 +52,7 @@ async def _execute_send(to: str, subject: str, body: str, backend: str):
             raise SendFailureError("Missing SMTP credentials")
             
         msg = MIMEMultipart()
-        msg["From"] = smtp_user
+        msg["From"] = sending_identity
         msg["To"] = to
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
@@ -70,30 +70,33 @@ async def _execute_send(to: str, subject: str, body: str, backend: str):
             raise SendFailureError(f"SMTP Error: {e}")
 
 
-async def send_email(to: str, subject: str, body: str, dry_run: bool = False) -> dict:
+async def send_email(to: str, subject: str, body: str, sending_identity: str, dry_run: bool = False) -> dict:
     """
-    Sends an email enforcing daily limits and dry_run.
+    Sends an email enforcing daily limits per identity and dry_run.
     """
     config = get_config()
     
-    # 1. Enforce Daily Limit (assume sending domain is just 'default' for now, or pull from config)
-    if hasattr(config.system, "outreach") and hasattr(config.system.outreach, "daily_send_limit"):
-        daily_limit = config.system.outreach.daily_send_limit
-    else:
-        daily_limit = 20
+    # 1. Find the daily limit for this specific identity
+    daily_limit = 15 # default fallback
+    if hasattr(config, "outreach") and hasattr(config.outreach, "sending_identities"):
+        for identity in config.outreach.sending_identities:
+            if identity.email == sending_identity:
+                daily_limit = identity.daily_send_limit
+                break
     
     async with get_session() as session:
-        # We query how many 'sent' events occurred today
+        # We query how many 'sent' events occurred today for this identity
         today_str = date.today().isoformat()
         res = await session.execute(
             select(func.count(EmailEvent.id))
             .where(EmailEvent.event_type == "sent")
+            .where(func.date(EmailEvent.timestamp) == today_str)
+            .where(EmailEvent.sending_identity == sending_identity)
         )
         sent_today = res.scalar_one()
-        logger.error(f"DEBUG LIMIT CHECK: {sent_today} >= {daily_limit}?")
         
         if sent_today >= daily_limit:
-            logger.warning(f"Daily send limit ({daily_limit}) reached. Cannot send to {to}.")
+            logger.warning(f"Daily send limit ({daily_limit}) reached for identity {sending_identity}. Cannot send to {to}.")
             raise DailyLimitReachedError("Daily send limit reached")
 
     # 2. Check dry_run globally or explicitly
@@ -105,7 +108,7 @@ async def send_email(to: str, subject: str, body: str, dry_run: bool = False) ->
     is_dry_run = dry_run or system_dry_run
     
     if is_dry_run:
-        logger.info(f"DRY RUN: Would send email to {to} | Subject: {subject}")
+        logger.info(f"DRY RUN: Would send email to {to} from {sending_identity} | Subject: {subject}")
         return {"id": "dry_run_000", "status": "sent", "dry_run": True}
             
     # 3. Execute Send with Retries
@@ -115,7 +118,7 @@ async def send_email(to: str, subject: str, body: str, dry_run: bool = False) ->
         backend = "smtp"
     
     try:
-        result = await _execute_send(to, subject, body, backend)
+        result = await _execute_send(to, subject, body, backend, sending_identity)
         return result
     except Exception as e:
         logger.error(f"Send failed permanently after 3 retries for {to}: {e}")
