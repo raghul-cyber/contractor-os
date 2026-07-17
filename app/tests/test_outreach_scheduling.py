@@ -120,7 +120,7 @@ async def test_full_cycle_scheduling(temp_db_session_outreach, monkeypatch):
     await session.refresh(lead)
     assert lead.status == "SENT"
     
-    seqs_res = await session.execute(select(OutreachSequence).where(OutreachSequence.lead_id == lead_id))
+    seqs_res = await session.execute(select(OutreachSequence).where(OutreachSequence.lead_id == lead.id))
     seqs = {s.sequence_type: s for s in seqs_res.scalars().all()}
     
     assert seqs["initial"].status == "sent"
