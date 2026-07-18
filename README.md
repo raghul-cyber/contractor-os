@@ -2,8 +2,9 @@
 
 ![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Status: Architecture Finalized](https://img.shields.io/badge/Status-Architecture%20Finalized-orange.svg)
+![Status: AhiXLight Production Build](https://img.shields.io/badge/Status-AhiXLight%20Production%20Build-orange.svg)
 ![Build: Personal Project](https://img.shields.io/badge/Build-Personal%20Project-lightgrey.svg)
+![Scaling: 100 leads/wk · 500 sends/wk](https://img.shields.io/badge/Scaling-100%20leads%2Fwk%20%C2%B7%20500%20sends%2Fwk-blue.svg)
 
 **A locally-run, fully agentic client-acquisition engine for solo technical contractors — it finds leads, researches them, writes personalized cold outreach, sends and follows up automatically, and tracks the whole deal pipeline in a built-in CRM. No SaaS subscriptions, no cloud lock-in.**
 
@@ -37,6 +38,8 @@ Solo contractors (software, cybersecurity, AI, DevOps freelancers) spend enormou
 ContractorOS automates the entire top-of-funnel sales motion end-to-end as a single local application, so the contractor only steps in for the human parts: reading replies, booking calls, writing proposals, closing deals.
 
 It runs locally on your machine, eliminating expensive monthly subscriptions and cloud lock-in.
+
+This instance now runs for AhiXLight, a real AI/software engineering & compliance firm, targeting enterprise buyers (SOC2/ISO27001-relevant, 50–2000 employees) rather than the original generic small-business ICP, at production volume (100 leads/week, 500 sends/week).
 
 ---
 
@@ -119,12 +122,13 @@ flowchart TB
 ### 1. Hunter
 **Role:** Acquires raw leads and normalizes data.
 - **Responsibilities:** Executes scraping routines (Apify Google Maps, website extractors, Hunter.io) or manual CSV imports. Deduplicates on normalized domain before insert.
+- **New Sources:** Added job-board hiring-signal scraping, public Crunchbase company pages, and B2B directory imports (each independently toggleable via `system.yaml` flags).
 - **Inputs:** `targets.yaml`, manual CSVs.
 - **Outputs:** Standardized raw leads in the database.
 
 ### 2. Profiler
 **Role:** Deep-researches each raw lead to determine fit.
-- **Responsibilities:** Scrapes website (Playwright), LinkedIn, and Google News. Uses LLM to synthesize a structured profile (industry, tech stack, pain points, personalization hooks). Computes a deterministic 0–1 `fit_score`. Low-fit leads are skipped to save costs.
+- **Responsibilities:** Scrapes website using Scrapling's two-tier fetch (Fetcher → StealthyFetcher) plus a new whole-site `LeadSiteSpider` crawl (on-domain only, robots.txt-respecting, capped pages/depth). Also scrapes LinkedIn and Google News. Uses LLM to synthesize a structured profile (industry, tech stack, pain points, personalization hooks). Computes a deterministic 0–1 `fit_score`. Low-fit leads are skipped to save costs.
 - **Inputs:** Raw leads, company domain.
 - **Outputs:** Structured JSON profile, `fit_score`.
 
@@ -137,14 +141,35 @@ flowchart TB
 ### 4. Outreach
 **Role:** Handles all email sending, scheduling, and reply detection.
 - **Responsibilities:** Sends emails (Resend/SMTP), enforces daily limits, schedules follow-ups (T+5/10/15), polls inbox via IMAP, classifies replies (LLM), and auto-cancels sequences upon reply/unsubscribe.
+- **Multi-Identity Sending:** Features round-robin assignment per lead at first send, same identity reused for all follow-ups, and per-identity daily send caps.
 - **Inputs:** Drafted emails, IMAP inbox.
 - **Outputs:** Delivered emails, Email Events (Sent/Replied/Bounced).
 
 ### 5. CRM
 **Role:** Owns the pipeline state machine and generates daily reporting.
 - **Responsibilities:** Transitions leads through states (RAW → RESEARCHED → DRAFTED etc.). Generates a daily plain-text digest (leads scraped, emails sent, hot leads, pipeline value) to Telegram/Discord.
+- **Negotiator Assist:** Drafts replies to leads, strictly requires human-approved send, and never auto-commits pricing or terms.
 - **Inputs:** Lead state changes, Outreach events.
 - **Outputs:** Analytics, Telegram Digest.
+
+### Negotiator Assist Flow
+
+A human always sends the final message — there is no scheduled job or automatic trigger that can invoke this send path.
+
+```mermaid
+flowchart TD
+    A[Lead Replies] --> B[Negotiator: draft_reply]
+    B --> C["Draft: subject + body + suggested_stage"]
+    C --> D{Human Reviews in Dashboard}
+    C -.contains firm price or term.-> J["Flagged: requires human confirmation"]
+    J --> D
+    D -->|Edit| E[Edited Draft]
+    D -->|Approve as-is| F[Draft Ready to Send]
+    E --> F
+    F --> G["POST /negotiator/send"]
+    G --> H["sender.py sends real email"]
+    H --> I["email_events row logged"]
+```
 
 ### 6. Orchestrator
 **Role:** The LangGraph state machine coordinating the pipeline.
@@ -213,6 +238,43 @@ flowchart LR
     E -->|fail| G[AllProvidersFailedError]
 ```
 
+### Whole-Site Research Crawl (Scrapling)
+
+Crawling stays strictly on the lead company's own domain, respects `robots.txt`, and never touches LinkedIn, Reddit, Discord, or any authenticated platform.
+
+```mermaid
+flowchart TD
+    A["Crawl Request for lead domain"] --> B["Fetcher: fast, no-browser fetch"]
+    B --> C{"Response blocked or empty?"}
+    C -->|No| D["Extract via css/xpath"]
+    C -->|Yes| E["StealthyFetcher: anti-bot bypass"]
+    E --> D
+    D --> F["Log fetch tier to activity_log"]
+    F --> G["LeadSiteSpider: on-domain crawl"]
+    G --> H["Aggregate pages up to max_pages/max_depth"]
+    H --> I["Feed into Profiler synthesizer prompt"]
+```
+
+### Multi-Identity Sending (Scale-Up)
+
+An identity is assigned once per lead at the initial send and never changes for that lead's follow-up sequence.
+
+```mermaid
+flowchart TD
+    A["New lead ready to send"] --> B["Round-robin assign sending_identity"]
+    B --> C["Identity 1 - daily cap"]
+    B --> D["Identity 2 - daily cap"]
+    B --> E["Identity 3 - daily cap"]
+    B --> F["Identity 4 - daily cap"]
+    B --> G["Identity 5 - daily cap"]
+    C --> H["Same identity reused for every follow-up"]
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+    H --> I["email_events logged per identity"]
+```
+
 ---
 
 ## Database Schema
@@ -246,6 +308,7 @@ erDiagram
         string subject
         string status
         string scheduled_at
+        string sending_identity
     }
     EMAIL_EVENTS {
         int id PK
@@ -292,6 +355,7 @@ erDiagram
 | **Scheduling** | APScheduler | Task execution and email scheduling via SQLAlchemy jobstore |
 | **API / UI** | FastAPI + HTMX | Single process REST API and interactive Dashboard |
 | **Scraping** | Playwright + Apify | Headless data extraction and lead sourcing |
+| **Scraping** | Scrapling (Fetcher/StealthyFetcher/Spider) | Two-tier anti-bot fetch + whole-site on-domain crawl |
 | **LLM Providers** | Groq, Ollama, Gemini, NVIDIA | Intelligence layer via fallback router |
 | **Email** | Resend, SMTP, IMAP | Outreach delivery and reply detection |
 | **Deployment** | Docker Compose | Spin up the App + optional local Ollama |
@@ -406,13 +470,31 @@ ContractorOS is highly efficient and designed to minimize ongoing operational co
 - [x] Phase 6 — Outreach
 - [x] Phase 7 — CRM + Orchestrator wiring
 - [x] Phase 8 — Dashboard
-- [ ] Phase 9 — Live cutover
+- [x] Phase 9 — Live cutover
+
+### Extension Packs
+- [x] AhiXLight real company profile & ICP targeting
+- [x] Scale to 100 leads/week, 500 sends/week (multi-identity sending)
+- [x] Expanded compliant B2B lead sourcing (job-board signals, Crunchbase, directories)
+- [x] Negotiator Assist (human-approved send only)
+- [x] Whole-site research crawling via Scrapling
 
 ---
 
 ## Scale-Out Path
 
 ContractorOS is explicitly designed as a monolithic pipeline for personal use. However, because the logical boundaries are strictly separated by Python modules, scaling it out is straightforward. If volume exceeds 2,000 leads per day or requires multi-tenancy, the SQLite backend can be swapped for PostgreSQL, APScheduler swapped for Celery/Redis, and modules extracted into independent microservices. This is out of scope for v1.
+
+---
+
+## Scaling & Compliance Boundaries
+
+### Volume
+Targeting 100 leads/week and 500 sends/week. Sends are spread across multiple warmed sending identities with a gradual weekly ramp rather than forced through a single cold domain.
+
+### What's intentionally out of scope
+- No Reddit/Discord/social-platform scraping for lead harvesting (ToS and deliverability risk, poor fit for this enterprise ICP).
+- No fully autonomous negotiation or auto-sending of business terms — a human always sends the final negotiated message.
 
 ---
 
