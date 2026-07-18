@@ -25,6 +25,7 @@ class LeadSiteSpider(Spider):
         self.download_delay = 1.0 # 1 second delay
         
         self.crawled_count = 0
+        self.queued_count = 1  # start URL is queued
         self.results = []
         
         self.priority_keywords = [
@@ -81,7 +82,7 @@ class LeadSiteSpider(Spider):
         # Follow links
         depth = response.meta.get('depth', 0) if hasattr(response, 'meta') and isinstance(response.meta, dict) else 0
         
-        if depth < self.max_depth and self.crawled_count < self.max_pages:
+        if depth < self.max_depth and self.queued_count < self.max_pages:
             links = response.css('a')
             
             link_objs = []
@@ -99,6 +100,9 @@ class LeadSiteSpider(Spider):
             link_objs.sort(key=lambda x: x[0], reverse=True)
             
             for score, url in link_objs:
+                if self.queued_count >= self.max_pages:
+                    break
+                self.queued_count += 1
                 yield response.follow(url, callback=self.parse, meta={'depth': depth + 1})
 
 async def crawl_lead_site(domain: str, max_pages: int = 15, max_depth: int = 2) -> list[dict]:

@@ -56,11 +56,15 @@ async def run_craft(state: dict) -> dict:
         
         for lead in leads:
             try:
+                # Format the 55 services into a condensed catalog string
+                catalog_lines = []
+                for s in config.catalog.services:
+                    catalog_lines.append(f"- [{s.category}] {s.name}: {s.description}")
+                service_catalog_str = "\n".join(catalog_lines)
+
                 # 1. Compose Prompt
                 initial_prompt = initial_prompt_tmpl.format(
-                    service_name=my_profile.services[0].name,
-                    service_description=my_profile.services[0].description,
-                    service_price=my_profile.services[0].price_range,
+                    service_catalog=service_catalog_str,
                     service_value_prop=my_profile.value_proposition,
                     company_name=lead.company_name,
                     domain=lead.domain,

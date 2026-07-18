@@ -13,8 +13,9 @@ CONFIG_DIR = Path("config")
 class ServiceConfig(BaseModel):
     name: str
     description: str
-    price_range: str
-    delivery: str
+    price_range: Optional[str] = None
+    delivery: Optional[str] = None
+    category: Optional[str] = None
 
 class ProfileConfig(BaseModel):
     name: str
@@ -28,6 +29,9 @@ class ProfileRoot(BaseModel):
     services: List[ServiceConfig]
     value_proposition: str
     past_results: List[str]
+
+class ServicesRoot(BaseModel):
+    services: List[ServiceConfig]
 
 class EmployeeRange(BaseModel):
     min: int
@@ -100,6 +104,7 @@ class SystemRoot(BaseModel):
 
 class AppConfig(BaseModel):
     profile: ProfileRoot
+    catalog: ServicesRoot
     targets: TargetsRoot
     outreach: OutreachRoot
     system: SystemConfig
@@ -114,12 +119,14 @@ def _load_yaml(path: Path) -> dict:
 
 def load_config() -> AppConfig:
     profile_data = _load_yaml(CONFIG_DIR / "profile.yaml")
+    catalog_data = _load_yaml(CONFIG_DIR / "services.yaml")
     targets_data = _load_yaml(CONFIG_DIR / "targets.yaml")
     outreach_data = _load_yaml(CONFIG_DIR / "outreach.yaml")
     system_data = _load_yaml(CONFIG_DIR / "system.yaml")
     
     return AppConfig(
         profile=ProfileRoot(**profile_data),
+        catalog=ServicesRoot(**catalog_data),
         targets=TargetsRoot(**targets_data),
         outreach=OutreachRoot(**outreach_data),
         system=SystemRoot(**system_data).system

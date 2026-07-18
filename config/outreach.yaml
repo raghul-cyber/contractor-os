@@ -2,6 +2,7 @@ sequence:
   follow_up_intervals_days: [5, 10, 15]
 
 max_follow_ups: 3
+daily_send_limit: 50
 send_window_hours: [9, 18]
 randomize_send_time: true
 

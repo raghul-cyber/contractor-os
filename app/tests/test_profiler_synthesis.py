@@ -173,7 +173,9 @@ async def test_news_malformed(monkeypatch):
     import app.modules.profiler.scrapers.news as news_mod
     
     # Mock feedparser to throw exception
-    monkeypatch.setattr(news_mod.feedparser, "parse", lambda url: 1/0)
+    def _mock_parse(url):
+        raise Exception("Mocked error")
+    monkeypatch.setattr(news_mod.feedparser, "parse", _mock_parse)
     
     res = await scrape_google_news("Test")
     assert res == [] # Graceful

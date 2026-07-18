@@ -2,13 +2,13 @@ system:
   batch_size: 20
   cycle_interval_hours: 6
   profiler:
-    min_fit_score: 0.3
+    min_fit_score: 0.0
     concurrent_scrapes: 5
     site_crawl:
       max_pages: 15
       max_depth: 2
   craft:
-    require_manual_approval: true
+    require_manual_approval: false
   outreach:
     dry_run: false
     weekly_send_target: 500

@@ -1,6 +1,8 @@
 import asyncio
 import sys
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -12,30 +14,28 @@ async def seed_leads():
     async with get_session() as session:
         # Check if they exist to avoid duplicates
         from sqlalchemy import select
-        res = await session.execute(select(Lead).where(Lead.source == 'test_cutover'))
+        res = await session.execute(select(Lead).where(Lead.domain == 'echo.com'))
         existing = res.scalars().all()
         if existing:
-            print(f"Found {len(existing)} existing test leads. Skipping injection.")
+            print("Found Echo Global Logistics lead. Resetting to RAW.")
+            for lead in existing:
+                lead.status = "RAW"
+            await session.commit()
             return
 
         leads = [
             Lead(
-                company_name="OpenAI",
-                domain="openai.com",
+                company_name="Echo Global Logistics",
+                domain="echo.com",
                 status="RAW",
-                source="test_cutover"
-            ),
-            Lead(
-                company_name="Anthropic",
-                domain="anthropic.com",
-                status="RAW",
-                source="test_cutover"
+                source="test_logistics",
+                email="ahilightfreelance@gmail.com"  # Route test emails to user's inbox
             )
         ]
         
         session.add_all(leads)
         await session.commit()
-        print(f"Successfully injected {len(leads)} test leads.")
+        print(f"Successfully injected {len(leads)} test logistics leads.")
 
 if __name__ == "__main__":
     asyncio.run(seed_leads())
