@@ -446,19 +446,6 @@ To protect your email reputation and deliverability, ContractorOS has strict saf
 
 ---
 
-## Cost Estimate
-
-ContractorOS is highly efficient and designed to minimize ongoing operational costs.
-
-| Component | Estimated Monthly Cost |
-| --- | --- |
-| LLM API (Groq/Gemini) | Free Tier (or pennies at scale) |
-| Apify Lead Scraping | $5 – $20 |
-| Email Sending (Resend) | Free Tier |
-| Local LLM (Ollama) | $0 |
-| **Total** | **~$10 – $35 / month** |
-
----
 
 ## Roadmap / Build Phases
 
