@@ -4,6 +4,9 @@ system:
   profiler:
     min_fit_score: 0.3
     concurrent_scrapes: 5
+    site_crawl:
+      max_pages: 15
+      max_depth: 2
   craft:
     require_manual_approval: true
   outreach:

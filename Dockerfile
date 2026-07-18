@@ -17,8 +17,9 @@ COPY pyproject.toml ./
 # Install dependencies including playwright
 RUN pip install --no-cache-dir .
 
-# Install playwright browsers
+# Install playwright & patchright browsers
 RUN playwright install --with-deps chromium
+RUN patchright install --with-deps chromium
 
 # Copy application code
 COPY . .

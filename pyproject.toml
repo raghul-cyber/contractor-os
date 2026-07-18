@@ -25,6 +25,7 @@ dependencies = [
     "python-dotenv",
     "resend",
     "tenacity",
+    "scrapling[all]>=0.4",
 ]
 
 [project.optional-dependencies]

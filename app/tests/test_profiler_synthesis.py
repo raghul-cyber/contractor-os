@@ -90,7 +90,7 @@ class MockRouterAlwaysInvalid:
 @pytest.mark.asyncio
 async def test_synthesize_profile_retry():
     router = MockRouterValidAfterRetry()
-    profile = await synthesize_profile(DummyLead(), {}, {}, [], router)
+    profile = await synthesize_profile(DummyLead(), {}, {}, [], [], router)
     assert router.calls == 2
     assert isinstance(profile, ProfileModel)
 
@@ -98,7 +98,7 @@ async def test_synthesize_profile_retry():
 async def test_synthesize_profile_failure():
     router = MockRouterAlwaysInvalid()
     with pytest.raises(ValueError) as excinfo:
-        await synthesize_profile(DummyLead(), {}, {}, [], router)
+        await synthesize_profile(DummyLead(), {}, {}, [], [], router)
     assert router.calls == 2
     assert "I am an AI" in str(excinfo.value)
 
@@ -106,39 +106,36 @@ async def test_synthesize_profile_failure():
 
 @pytest.mark.asyncio
 async def test_website_partial_404(monkeypatch):
-    from playwright.async_api import async_playwright
-    
-    # We will mock the whole _extract_text so we don't need real playwright for this test
-    # Or mock Playwright's goto
     import app.modules.profiler.scrapers.website as website_mod
-    
-    async def mock_extract_text(page, url):
+
+    async def mock_fetch_url(url, use_stealth=False):
         if "/about" in url:
-            raise Exception("404 Not Found") # Simulating an extraction exception/404
+            return "" # Simulating a 404 gracefully handled
         return f"Content of {url}"
+
+    monkeypatch.setattr(website_mod, "_fetch_url", mock_fetch_url)
     
-    monkeypatch.setattr(website_mod, "_extract_text", mock_extract_text)
-    
-    # We also mock Playwright to just yield a dummy page
-    class MockPage: pass
-    class MockContext:
-        async def new_page(self): return MockPage()
-    class MockBrowser:
-        async def new_context(self, **kwargs): return MockContext()
-        async def close(self): pass
-    class MockChromium:
-        async def launch(self, **kwargs): return MockBrowser()
-    class MockPlaywright:
-        @property
-        def chromium(self): return MockChromium()
-        async def __aenter__(self): return self
-        async def __aexit__(self, *args): pass
+    class MockResponse:
+        status = 200
+        body = b"Mock homepage content"
+        text = "Mock homepage content"
         
-    monkeypatch.setattr(website_mod, "async_playwright", lambda: MockPlaywright())
+    class MockFetcher:
+        def get(self, url): return MockResponse()
+        
+    monkeypatch.setattr(website_mod, "Fetcher", MockFetcher)
+    monkeypatch.setattr(website_mod, "_extract_text_from_scrapling", lambda r: "Extracted mock homepage")
     
-    res = await scrape_website("example.com")
-    assert "Content of https://example.com" in res["homepage"]
-    assert res["about"] == "" # Failed gracefully
+    res = await website_mod.scrape_website("https://example.com")
+    
+    assert "homepage" in res
+    assert "about" in res
+    assert "services" in res
+    
+    # Even though /about failed, we should still get homepage and services
+    assert res["about"] == ""
+    assert "Content" in res["services"]
+    assert "Extracted mock homepage" in res["homepage"]
 
 @pytest.mark.asyncio
 async def test_linkedin_403(monkeypatch):
@@ -258,8 +255,8 @@ async def test_full_run_profiler(temp_db_session_with_3_leads, monkeypatch):
     leads_res = await session.execute(select(Lead).order_by(Lead.id))
     leads = leads_res.scalars().all()
     
-    for l in leads:
-        await session.refresh(l)
+    for lead_record in leads:
+        await session.refresh(lead_record)
     
     assert leads[0].status == "RESEARCHED"
     assert leads[1].status == "LOW_FIT"

@@ -95,7 +95,7 @@ async def test_synthesizer_retry_success():
     router = FailingMockRouter(fail_times=1)
     
     # 1 fail, then success
-    profile = await synthesize_profile(DummyLead(), {}, {}, [], router)
+    profile = await synthesize_profile(DummyLead(), {}, {}, [], [], router)
     assert isinstance(profile, ProfileModel)
     assert router.calls == 2
 
@@ -114,7 +114,7 @@ async def test_synthesizer_retry_failure():
     router = FailingMockRouter(fail_times=3) # Will fail twice
     
     with pytest.raises(ValueError) as excinfo:
-        await synthesize_profile(DummyLead(), {}, {}, [], router)
+        await synthesize_profile(DummyLead(), {}, {}, [], [], router)
     
     assert "This is not JSON!" in str(excinfo.value)
     assert router.calls == 2 # 1 initial + 1 retry

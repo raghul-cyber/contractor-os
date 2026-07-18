@@ -19,7 +19,7 @@ class ProfileModel(BaseModel):
     decision_maker_title: Optional[str] = None
     personalization_hooks: List[str]
 
-async def synthesize_profile(lead, scraped_website: dict, scraped_linkedin: dict, scraped_news: list, router) -> ProfileModel:
+async def synthesize_profile(lead, scraped_website: dict, scraped_linkedin: dict, scraped_news: list, scraped_crawl: list, router) -> ProfileModel:
     prompt = f"""
 You are an expert sales researcher. Your task is to synthesize a structured profile of a target company based on scraped data and known fields.
 
@@ -42,6 +42,9 @@ Services: {scraped_website.get('services', '')[:1000]}
 
 # Scraped News
 {json.dumps(scraped_news)}
+
+# Crawled Pages
+{json.dumps(scraped_crawl)[:4000] if scraped_crawl else 'No crawl data'}
 
 # Instructions
 Return ONLY valid JSON matching the following schema. No markdown formatting or extra text.

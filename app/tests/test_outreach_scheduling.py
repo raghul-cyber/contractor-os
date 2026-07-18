@@ -109,7 +109,7 @@ async def test_full_cycle_scheduling(temp_db_session_outreach, monkeypatch):
     # Approved initial
     session.add(OutreachSequence(lead_id=lead.id, sequence_type="initial", subject="S", body="B", status="approved"))
     session.add(OutreachSequence(lead_id=lead.id, sequence_type="fu1", subject="S", body="B", status="draft"))
-    session.add(OutreachSequence(lead_id=l.id if 'l' in locals() else lead.id, sequence_type="fu2", subject="S", body="B", status="draft"))
+    session.add(OutreachSequence(lead_id=lead.id, sequence_type="fu2", subject="S", body="B", status="draft"))
     session.add(OutreachSequence(lead_id=lead.id, sequence_type="fu3", subject="S", body="B", status="draft"))
     await session.commit()
     

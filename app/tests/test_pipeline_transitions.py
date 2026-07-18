@@ -130,9 +130,9 @@ async def test_full_happy_path_integration(e2e_session, monkeypatch):
     monkeypatch.setattr("app.modules.craft.run.LLMRouter", MockRouter)
     
     # Mock Scrapers
-    async def mock_scrape_website(*args): return {"content": "Mocked"}
-    async def mock_scrape_linkedin(*args): return {"linkedin": "Mocked"}
-    async def mock_scrape_news(*args): return [{"title": "News"}]
+    async def mock_scrape_website(*args, **kwargs): return {"content": "Mocked"}
+    async def mock_scrape_linkedin(*args, **kwargs): return {"linkedin": "Mocked"}
+    async def mock_scrape_news(*args, **kwargs): return [{"title": "News"}]
     
     monkeypatch.setattr("app.modules.profiler.run.scrape_website", mock_scrape_website)
     monkeypatch.setattr("app.modules.profiler.run.scrape_linkedin_company", mock_scrape_linkedin)

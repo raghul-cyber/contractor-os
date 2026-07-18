@@ -10,6 +10,7 @@ from app.core.llm_router import LLMRouter, RouterConfig
 from .scrapers.website import scrape_website
 from .scrapers.linkedin import scrape_linkedin_company
 from .scrapers.news import scrape_google_news
+from .scrapers.site_crawl import crawl_lead_site
 from .synthesizer import synthesize_profile
 from .fit_scorer import score_fit
 
@@ -19,12 +20,24 @@ async def _process_lead(lead, router: LLMRouter, config, session) -> bool:
     """Processes a single lead. Returns True if successfully researched/low_fit."""
     try:
         # Concurrent Scraping
-        website_task = asyncio.create_task(scrape_website(lead.website or lead.domain))
+        website_task = asyncio.create_task(scrape_website(lead.website or lead.domain, lead_id=lead.id))
         linkedin_task = asyncio.create_task(scrape_linkedin_company(lead.company_name, lead.website or lead.domain))
         news_task = asyncio.create_task(scrape_google_news(lead.company_name))
         
-        scraped_website, scraped_linkedin, scraped_news = await asyncio.gather(
-            website_task, linkedin_task, news_task, return_exceptions=True
+        max_pages = 15
+        max_depth = 2
+        try:
+            site_crawl_cfg = config.system.profiler.site_crawl
+            if site_crawl_cfg:
+                max_pages = getattr(site_crawl_cfg, 'max_pages', 15)
+                max_depth = getattr(site_crawl_cfg, 'max_depth', 2)
+        except AttributeError:
+            pass
+            
+        site_crawl_task = asyncio.create_task(crawl_lead_site(lead.website or lead.domain, max_pages, max_depth))
+        
+        scraped_website, scraped_linkedin, scraped_news, scraped_crawl = await asyncio.gather(
+            website_task, linkedin_task, news_task, site_crawl_task, return_exceptions=True
         )
         
         # Handle exceptions gracefully if tasks blew up instead of returning safe values
@@ -37,10 +50,13 @@ async def _process_lead(lead, router: LLMRouter, config, session) -> bool:
         if isinstance(scraped_news, Exception):
             logger.warning(f"News task blew up for {lead.company_name}: {scraped_news}")
             scraped_news = []
+        if isinstance(scraped_crawl, Exception):
+            logger.warning(f"Site crawl task blew up for {lead.company_name}: {scraped_crawl}")
+            scraped_crawl = []
             
         # Synthesize
         try:
-            profile = await synthesize_profile(lead, scraped_website, scraped_linkedin, scraped_news, router)
+            profile = await synthesize_profile(lead, scraped_website, scraped_linkedin, scraped_news, scraped_crawl, router)
             
             # Score
             fit_score = score_fit(profile, config.targets)
