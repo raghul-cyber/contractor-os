@@ -5,7 +5,7 @@ from sqlalchemy import select
 from typing import Optional
 
 from app.core.db import get_session
-from app.core.models import Lead, Pipeline
+from app.core.models import Lead, Pipeline, NegotiatorDraft
 from app.api.routes_runs import get_stats_today
 
 router = APIRouter(tags=["ui"])
@@ -83,3 +83,24 @@ async def get_lead_sequence(request: Request, lead_id: int):
         html += "</div>"
         
         return HTMLResponse(html)
+
+@router.get("/ui/leads/{lead_id}/negotiator", response_class=HTMLResponse)
+async def get_lead_negotiator(request: Request, lead_id: int):
+    async with get_session() as session:
+        result = await session.execute(select(Lead).where(Lead.id == lead_id))
+        lead = result.scalar_one_or_none()
+        if not lead:
+            return HTMLResponse("Lead not found", status_code=404)
+            
+        draft_res = await session.execute(select(NegotiatorDraft).where(NegotiatorDraft.lead_id == lead_id))
+        draft = draft_res.scalar_one_or_none()
+        
+        return templates.TemplateResponse(
+            request=request,
+            name="negotiator_box.html",
+            context={
+                "lead": lead,
+                "draft": draft
+            }
+        )
+

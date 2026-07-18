@@ -1,0 +1,128 @@
+<div class="p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="font-bold text-purple-800">Negotiator AI - {{ lead.company_name }}</h3>
+        <button onclick="document.getElementById('neg-{{ lead.id }}').innerHTML=''" class="text-gray-400 hover:text-gray-600">✕ Close</button>
+    </div>
+    
+    <!-- Draft Form -->
+    <div class="mb-4">
+        <label class="block text-sm font-semibold mb-1">Incoming Message (to reply to):</label>
+        <textarea id="incoming-msg-{{ lead.id }}" class="w-full border rounded p-2 text-sm h-24 shadow-inner" placeholder="Paste the lead's message here..."></textarea>
+        <button 
+            onclick="generateDraft({{ lead.id }})"
+            id="draft-btn-{{ lead.id }}"
+            class="mt-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded shadow text-sm font-semibold transition">
+            Generate Draft
+        </button>
+    </div>
+
+    <!-- Edit & Send Form -->
+    <div id="draft-container-{{ lead.id }}" class="{% if not draft %}hidden{% endif %} space-y-3 p-4 bg-white rounded border border-purple-200 shadow-sm">
+        <div id="human-warning-{{ lead.id }}" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-2 text-xs font-bold rounded">
+            ⚠️ WARNING: This draft contains specific pricing, discounts, or terms. Review carefully before sending.
+        </div>
+        
+        <div>
+            <label class="block text-xs font-semibold mb-1 text-gray-600">Subject</label>
+            <input id="draft-subject-{{ lead.id }}" type="text" class="w-full border rounded p-2 text-sm font-medium" value="{{ draft.draft_subject if draft else '' }}">
+        </div>
+        
+        <div>
+            <label class="block text-xs font-semibold mb-1 text-gray-600">Body</label>
+            <textarea id="draft-body-{{ lead.id }}" class="w-full border rounded p-2 text-sm h-48 whitespace-pre-wrap">{{ draft.draft_body if draft else '' }}</textarea>
+        </div>
+        
+        <div class="flex justify-end mt-2">
+            <button 
+                onclick="sendDraft({{ lead.id }})"
+                id="send-btn-{{ lead.id }}"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow font-bold text-sm transition">
+                Send Reply
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        {% if draft and draft.requires_human_confirmation %}
+        document.getElementById('human-warning-{{ lead.id }}').classList.remove('hidden');
+        {% endif %}
+
+        async function generateDraft(leadId) {
+            const btn = document.getElementById('draft-btn-' + leadId);
+            const msg = document.getElementById('incoming-msg-' + leadId).value;
+            
+            if (!msg) {
+                alert("Please enter the incoming message.");
+                return;
+            }
+            
+            btn.innerText = "Drafting...";
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/leads/${leadId}/negotiator/draft`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ incoming_message_text: msg })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('draft-container-' + leadId).classList.remove('hidden');
+                    document.getElementById('draft-subject-' + leadId).value = data.draft_subject;
+                    document.getElementById('draft-body-' + leadId).value = data.draft_body;
+                    
+                    const warning = document.getElementById('human-warning-' + leadId);
+                    if (data.requires_human_confirmation) {
+                        warning.classList.remove('hidden');
+                    } else {
+                        warning.classList.add('hidden');
+                    }
+                } else {
+                    alert("Error: " + JSON.stringify(data));
+                }
+            } catch (err) {
+                alert("Request failed");
+            } finally {
+                btn.innerText = "Generate Draft";
+                btn.disabled = false;
+            }
+        }
+        
+        async function sendDraft(leadId) {
+            const subj = document.getElementById('draft-subject-' + leadId).value;
+            const body = document.getElementById('draft-body-' + leadId).value;
+            const btn = document.getElementById('send-btn-' + leadId);
+            
+            if (!subj || !body) {
+                alert("Subject and body are required");
+                return;
+            }
+            
+            btn.innerText = "Sending...";
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/leads/${leadId}/negotiator/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject: subj, body: body })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    alert("Reply sent successfully!");
+                    window.location.reload();
+                } else {
+                    alert("Error sending: " + JSON.stringify(data));
+                    btn.innerText = "Send Reply";
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Send failed");
+                btn.innerText = "Send Reply";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</div>

@@ -35,8 +35,20 @@
             Approve Draft
         </button>
         {% endif %}
+        {% if lead.status == 'REPLIED' %}
+        <button 
+            hx-get="/ui/leads/{{ lead.id }}/negotiator" 
+            hx-target="#neg-{{ lead.id }}" 
+            hx-swap="innerHTML"
+            class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs shadow">
+            Reply with AI
+        </button>
+        {% endif %}
     </td>
 </tr>
 <tr class="bg-gray-50">
     <td colspan="5" id="seq-{{ lead.id }}" class="p-0"></td>
+</tr>
+<tr class="bg-gray-50">
+    <td colspan="5" id="neg-{{ lead.id }}" class="p-0"></td>
 </tr>

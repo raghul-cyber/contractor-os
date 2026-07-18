@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import Integer, String, Float, Text, ForeignKey, Index, UniqueConstraint, func
+from sqlalchemy import Integer, String, Float, Text, ForeignKey, Index, UniqueConstraint, func, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -143,3 +143,14 @@ class Run(Base):
     emails_sent: Mapped[int] = mapped_column(Integer, default=0)
     replies_received: Mapped[int] = mapped_column(Integer, default=0)
     errors: Mapped[int] = mapped_column(Integer, default=0)
+
+class NegotiatorDraft(Base):
+    __tablename__ = "negotiator_drafts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[int] = mapped_column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False, unique=True)
+    draft_subject: Mapped[str] = mapped_column(Text, nullable=False)
+    draft_body: Mapped[str] = mapped_column(Text, nullable=False)
+    suggested_next_stage: Mapped[Optional[str]] = mapped_column(Text)
+    requires_human_confirmation: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False, default=func.datetime('now'))

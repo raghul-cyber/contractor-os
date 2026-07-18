@@ -1,10 +1,11 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.db import get_session
-from app.core.models import Lead, OutreachSequence, EmailEvent
+from app.core.models import Lead, OutreachSequence, EmailEvent, NegotiatorDraft
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -135,3 +136,87 @@ async def approve_sequence(lead_id: int):
         await session.commit()
         
         return {"status": "success", "message": "Sequence approved for outreach"}
+
+class DraftRequest(BaseModel):
+    incoming_message_text: str
+
+class SendRequest(BaseModel):
+    subject: str
+    body: str
+
+@router.post("/{lead_id}/negotiator/draft")
+async def draft_negotiator_reply(lead_id: int, req: DraftRequest):
+    from app.modules.crm.negotiator import draft_reply
+    from app.core.llm_router import LLMRouter, RouterConfig
+    router_instance = LLMRouter(RouterConfig())
+    async with get_session() as session:
+        try:
+            res = await draft_reply(lead_id, req.incoming_message_text, session, router_instance)
+            return res
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+@router.post("/{lead_id}/negotiator/send")
+async def send_negotiator_reply(lead_id: int, req: SendRequest):
+    from app.modules.outreach.sender import send_email
+    from app.core.config_loader import get_config
+    config = get_config()
+    
+    async with get_session() as session:
+        # Get lead
+        l_res = await session.execute(select(Lead).where(Lead.id == lead_id))
+        lead = l_res.scalar_one_or_none()
+        if not lead:
+            raise HTTPException(status_code=404, detail="Lead not found")
+            
+        # Get identity to use
+        # For simplicity, fallback to default or grab the latest sending_identity used in outreach
+        evt_res = await session.execute(
+            select(EmailEvent.sending_identity)
+            .where(EmailEvent.lead_id == lead_id)
+            .where(EmailEvent.event_type == "sent")
+            .where(EmailEvent.sending_identity != None)
+            .order_by(EmailEvent.timestamp.desc())
+            .limit(1)
+        )
+        last_identity = evt_res.scalar_one_or_none()
+        if not last_identity and hasattr(config, "outreach") and config.outreach.sending_identities:
+            last_identity = config.outreach.sending_identities[0].email
+        elif not last_identity:
+            last_identity = "default@example.com"
+            
+        # Send
+        to_email = lead.email or lead.decision_maker_email
+        if not to_email:
+            raise HTTPException(status_code=400, detail="Lead has no email address")
+            
+        try:
+            send_res = await send_email(
+                to=to_email,
+                subject=req.subject,
+                body=req.body,
+                sending_identity=last_identity,
+                dry_run=False,
+                session=session
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Send failed: {str(e)}")
+            
+        # Log event
+        evt = EmailEvent(
+            lead_id=lead_id,
+            event_type="sent",
+            sending_identity=last_identity,
+            raw_snippet=req.body[:200]
+        )
+        session.add(evt)
+        
+        # Optionally, delete the draft
+        d_res = await session.execute(select(NegotiatorDraft).where(NegotiatorDraft.lead_id == lead_id))
+        draft = d_res.scalar_one_or_none()
+        if draft:
+            await session.delete(draft)
+            
+        await session.commit()
+        
+        return {"status": "success", "message": "Reply sent successfully"}
