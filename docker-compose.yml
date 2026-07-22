@@ -29,5 +29,15 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    profiles:
+      - n8n
+    volumes:
+      - n8n_data:/home/node/.n8n
+
 volumes:
   ollama_data:
+  n8n_data:

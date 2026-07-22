@@ -13,6 +13,27 @@ async def trigger_run(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_full_cycle)
     return {"status": "started", "message": "Orchestrator cycle triggered in background"}
 
+@router.get("/api/runs/recent")
+async def get_recent_runs(limit: int = 10):
+    async with get_session() as session:
+        result = await session.execute(
+            select(Run).order_by(Run.started_at.desc()).limit(limit)
+        )
+        runs = result.scalars().all()
+        return [
+            {
+                "id": run.id,
+                "started_at": run.started_at,
+                "completed_at": run.completed_at,
+                "leads_scraped": run.leads_scraped,
+                "leads_researched": run.leads_researched,
+                "emails_sent": run.emails_sent,
+                "replies_received": run.replies_received,
+                "errors": run.errors
+            }
+            for run in runs
+        ]
+
 @router.get("/api/runs/{run_id}")
 async def get_run(run_id: int):
     async with get_session() as session:
