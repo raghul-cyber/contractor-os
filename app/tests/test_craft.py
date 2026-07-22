@@ -75,17 +75,14 @@ class SpyRouter:
     async def call(self, prompt, **kwargs):
         self.calls += 1
         if "Valid" in prompt:
-            # Over 150 words initial body
-            long_body = "word " * 200
-            # Under 80 word followups
-            short_fu = "short fu string with Specific Hook Here"
-            
-            return json.dumps({
-                "initial": {"subject": "S1", "body": long_body},
-                "fu1": {"subject": "S2", "body": short_fu},
-                "fu2": {"subject": "S3", "body": short_fu},
-                "fu3": {"subject": "S4", "body": short_fu}
-            })
+            if self.calls == 1:
+                # Over limits to test truncation
+                return json.dumps({
+                    "initial": {"subject": "Subj 1", "body": "word " * 500},
+                    "fu1": {"subject": "Subj 2", "body": "Specific Hook Here " + "word " * 300},
+                    "fu2": {"subject": "Subj 3", "body": "Specific Hook Here " + "word " * 300},
+                    "fu3": {"subject": "Subj 4", "body": "Specific Hook Here " + "word " * 300}
+                })
         else:
             return "totally invalid json"
 
@@ -130,8 +127,8 @@ async def test_craft_run_full(temp_db_session_craft, monkeypatch):
         # Word counts enforced programmatically
         words = len(seq.body.split())
         if seq.sequence_type == "initial":
-            assert words <= 155 # 150 + " ... [TRUNCATED]" is ~ 153
+            assert words <= 405 # 400 + " ... [TRUNCATED]" is ~ 403
             assert "[TRUNCATED]" in seq.body
         else:
-            assert words <= 85
+            assert words <= 205
             assert "Specific Hook Here" in seq.body

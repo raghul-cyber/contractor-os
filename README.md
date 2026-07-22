@@ -446,7 +446,10 @@ To protect your email reputation and deliverability, ContractorOS has strict saf
 
 ---
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> daff225c2fc54b24360937cfedeb3572a0e78464
 
 ## Roadmap / Build Phases
 

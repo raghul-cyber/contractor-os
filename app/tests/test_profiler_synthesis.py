@@ -10,7 +10,7 @@ from app.modules.profiler.fit_scorer import score_fit
 from app.core.llm_router import LLMRouter, RouterConfig
 import app.modules.profiler.run as profiler_run_mod
 from app.modules.profiler.scrapers.website import scrape_website
-from app.modules.profiler.scrapers.linkedin import scrape_linkedin_company
+from app.modules.profiler.scrapers.linkedin_company import scrape_linkedin_company
 from app.modules.profiler.scrapers.news import scrape_google_news
 
 class MockConfig:

@@ -75,7 +75,7 @@ class SpyRouterForPrompts:
         self.last_prompt = prompt
         
         if self.over_word_limit:
-            initial_body = "word " * 200
+            initial_body = "word " * 500
         else:
             initial_body = "normal valid length body"
             
@@ -128,8 +128,8 @@ async def test_craft_word_count_enforcement(temp_db_session_craft_prompts, monke
     )
     initial_seq = seqs_res.scalars().first()
     
-    # 150 words + 3 words for "... [TRUNCATED]"
-    assert len(initial_seq.body.split()) <= 153 
+    # 400 words + 3 words for "... [TRUNCATED]"
+    assert len(initial_seq.body.split()) <= 405 
     assert "[TRUNCATED]" in initial_seq.body
 
 @pytest.mark.asyncio
