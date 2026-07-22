@@ -11,6 +11,7 @@ from .sources.apify_jobboard_signals import scrape_job_boards
 from .sources.apify_crunchbase_public import scrape_crunchbase
 from .sources.directory_import import scrape_directories
 from .sources.apify_contact import extract_contacts
+from .sources.bs4_email_fallback import fast_extract_email
 from .sources.apify_leadscraper import scrape_leads
 from .sources.manual_import import import_from_csv
 from .sources.local_search import scrape_local_search
@@ -127,11 +128,15 @@ async def run_hunter(state: dict) -> dict:
             )
             for lead in leads_missing_email.scalars().all():
                 try:
-                    contacts = await extract_contacts(lead.website)
-                    if contacts.get("email"):
-                        lead.email = contacts["email"]
-                    if contacts.get("phone"):
-                        lead.phone = contacts["phone"]
+                    fast_email = await fast_extract_email(lead.website)
+                    if fast_email:
+                        lead.email = fast_email
+                    else:
+                        contacts = await extract_contacts(lead.website)
+                        if contacts.get("email"):
+                            lead.email = contacts["email"]
+                        if contacts.get("phone"):
+                            lead.phone = contacts["phone"]
                 except Exception as ce:
                     logger.warning(f"Apify Contact failed for {lead.website}: {ce}")
                     
