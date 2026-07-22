@@ -9,7 +9,7 @@ async def scrape_google_maps(filters: dict, client: ApifyClientAsync = None) -> 
             raise ValueError("APIFY_API_TOKEN not set")
         client = ApifyClientAsync(token)
         
-    actor_id = "compass/google-maps-scraper"
+    actor_id = "compass/crawler-google-places"
     run_input = {
         "searchStringsArray": filters.get("sectors", []),
         "locationQuery": filters.get("location", ""),

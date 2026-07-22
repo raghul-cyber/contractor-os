@@ -2,11 +2,13 @@ sequence:
   follow_up_intervals_days: [5, 10, 15]
 
 max_follow_ups: 3
-daily_send_limit: 50
+daily_send_limit: 140
 send_window_hours: [9, 18]
 randomize_send_time: true
 
 sending_identities:
+  - email: "ahilightfreelance@gmail.com"
+    daily_send_limit: 500
   - email: "hello@ahixlight.com"
     daily_send_limit: 15
   - email: "david@ahixlight.com"

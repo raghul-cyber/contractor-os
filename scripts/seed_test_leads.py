@@ -12,30 +12,24 @@ from app.core.models import Lead
 async def seed_leads():
     print("Seeding test leads...")
     async with get_session() as session:
-        # Check if they exist to avoid duplicates
         from sqlalchemy import select
-        res = await session.execute(select(Lead).where(Lead.domain == 'echo.com'))
-        existing = res.scalars().all()
-        if existing:
-            print("Found Echo Global Logistics lead. Resetting to RAW.")
-            for lead in existing:
-                lead.status = "RAW"
-            await session.commit()
-            return
-
-        leads = [
-            Lead(
-                company_name="Echo Global Logistics",
-                domain="echo.com",
-                status="RAW",
-                source="test_logistics",
-                email="ahilightfreelance@gmail.com"  # Route test emails to user's inbox
-            )
-        ]
+        for data in [
+            {"company_name": "Vercel", "domain": "vercel.com", "website": "https://vercel.com", "status": "RAW", "source": "test_seed_1", "email": "ahilightfreelance@gmail.com"},
+            {"company_name": "OpenAI", "domain": "openai.com", "website": "https://openai.com", "status": "RAW", "source": "test_seed_2", "email": "ahilightfreelance@gmail.com"},
+            {"company_name": "Stripe", "domain": "stripe.com", "website": "https://stripe.com", "status": "RAW", "source": "test_seed_3", "email": "ahilightfreelance@gmail.com"}
+        ]:
+            res = await session.execute(select(Lead).where(Lead.domain == data["domain"]))
+            existing = res.scalars().first()
+            if existing:
+                existing.status = "RAW"
+                # To guarantee they pass the fit score in profiler, let's force fit_score later, or rely on them being real companies.
+                # Actually, the user's config requires min_fit_score > 0.0. Real tech companies should score > 0.
+            else:
+                session.add(Lead(**data))
         
-        session.add_all(leads)
         await session.commit()
-        print(f"Successfully injected {len(leads)} test logistics leads.")
+        print("Successfully injected test leads.")
+        print(f"Successfully injected 3 test leads to demonstrate ahixlight.com emails.")
 
 if __name__ == "__main__":
     asyncio.run(seed_leads())

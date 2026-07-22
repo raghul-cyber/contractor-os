@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime
 import os
 
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from app.core.models import Base, Lead, Run, Pipeline, ActivityLog, OutreachSequence, EmailEvent
@@ -30,6 +31,10 @@ class MockConfig:
 @pytest_asyncio.fixture
 async def temp_db_session_orch(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    # Match production: enforce FK constraints in tests
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -155,9 +160,15 @@ async def test_daily_digest(temp_db_session_orch, monkeypatch):
     run1 = Run(leads_scraped=5, leads_researched=3, emails_sent=10, replies_received=2)
     session.add(run1)
     
+    # Create parent Lead rows (FK enforcement requires them)
+    lead1 = Lead(company_name="DigestA", domain="digesta.com", status="REPLIED", source="test")
+    lead2 = Lead(company_name="DigestB", domain="digestb.com", status="WON", source="test")
+    session.add_all([lead1, lead2])
+    await session.commit()
+    
     # 1 hot lead, 1 active deal
-    pipe1 = Pipeline(lead_id=1, stage="REPLIED", contract_value=500.0) # Hot & Active
-    pipe2 = Pipeline(lead_id=2, stage="WON", contract_value=1000.0) # Not active
+    pipe1 = Pipeline(lead_id=lead1.id, stage="REPLIED", contract_value=500.0) # Hot & Active
+    pipe2 = Pipeline(lead_id=lead2.id, stage="WON", contract_value=1000.0) # Not active
     session.add_all([pipe1, pipe2])
     
     await session.commit()

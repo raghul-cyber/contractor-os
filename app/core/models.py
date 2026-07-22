@@ -154,3 +154,22 @@ class NegotiatorDraft(Base):
     suggested_next_stage: Mapped[Optional[str]] = mapped_column(Text)
     requires_human_confirmation: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[str] = mapped_column(Text, nullable=False, default=func.datetime('now'))
+
+class SignalHit(Base):
+    __tablename__ = "signal_hits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    platform: Mapped[str] = mapped_column(Text, nullable=False, default="reddit")
+    subreddit: Mapped[str] = mapped_column(Text, nullable=False)
+    post_title: Mapped[str] = mapped_column(Text, nullable=False)
+    post_url: Mapped[str] = mapped_column(Text, nullable=False)
+    author_username: Mapped[str] = mapped_column(Text, nullable=False)
+    matched_keyword: Mapped[str] = mapped_column(Text, nullable=False)
+    snippet: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False, default=func.datetime('now'))
+    notified: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        Index("idx_signal_hits_platform", "platform"),
+        Index("idx_signal_hits_notified", "notified"),
+    )

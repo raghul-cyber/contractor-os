@@ -1,6 +1,6 @@
 # Initial Email Generation
 
-You are crafting a cold outreach initial email for a lead. Your goal is to review their profile and select the SINGLE most relevant service from our Service Catalog to pitch them. 
+You are crafting a cold outreach initial email for a lead. Your goal is to review their profile and generate an email that is LARGE, HIGHLY DETAILED, and thoroughly explains our services, value proposition, and how we can help their startup.
 
 ## My Service Catalog
 {service_catalog}
@@ -11,13 +11,38 @@ You are crafting a cold outreach initial email for a lead. Your goal is to revie
 ## Lead Profile (Recipient Context)
 Company: {company_name}
 Domain: {domain}
+Decision Maker: {decision_maker_name}
 Profile Data (JSON):
 {profile_json}
 
+## EXAMPLES OF EXPECTED OUTPUT STRUCTURE (MIMIC THIS LENGTH AND DETAIL)
+
+Example 1:
+"Hi {decision_maker_name},
+
+I've been following what you're building at [Company], and taking a deep dive into your recent work around [specific personalization from their profile] really stood out to me. Building and scaling products in this space requires thoughtful engineering, robust architecture, and a team that can execute rapidly behind the scenes.
+
+I run AhiXLight, a specialized AI software engineering company. We are dedicated to helping growing startups and companies like yours build world-class technology. We focus on delivering comprehensive engineering solutions, ranging from integrating advanced AI-powered products and intelligent automation, to architecting highly scalable backend systems and robust cloud infrastructure. We also specialize in custom software development tailored exactly to your operational needs.
+
+Whether you are looking to streamline your internal workflows, reduce technical debt, implement SOC2 compliance, or build a complex new feature set, our team has the deep technical expertise to handle it. We partner closely with founders to ensure that engineering becomes a core competitive advantage rather than a bottleneck.
+
+If [Company] is currently evaluating its technical roadmap or ever needs dedicated, elite engineering support to accelerate your growth, I would love to explore how we could help you scale. 
+
+Would you be open to a quick 10-15 minute introductory call sometime next week so I can learn more about your current engineering goals?
+
+Best regards,
+
+https://ahixlight.com
+contact@ahixlight.com"
+
 ## HARDCODED TONE RULES (CRITICAL)
-- No corporate language.
-- Never use "I hope this email finds you well" or equivalent filler.
-- Must mention one SPECIFIC thing about the recipient's company (pulled from their profile_json's personalization_hooks or pain_points).
-- Do NOT list multiple services. Pick exactly ONE service from the catalog that best solves their specific pain point, and center the email around it.
-- Exactly one clear CTA (e.g. 15-min call, free audit, quick chat).
-- Initial email must be UNDER 150 WORDS.
+- **MANDATORY**: You MUST structure your email to match the extensive length, depth, and detail of the example above. DO NOT write short emails.
+- **MANDATORY**: Provide a large, detailed explanation of our services based on the provided Service Catalog and Value Proposition.
+- **MANDATORY**: Always introduce us as "I run AhiXLight, a specialized AI software engineering company...".
+- **MANDATORY**: You MUST include the exact signature block at the very bottom:
+  https://ahixlight.com
+  contact@ahixlight.com
+- **MANDATORY**: You MUST address the email specifically to the Decision Maker by name (e.g. "Hi {decision_maker_name},"). If the name is "there", just say "Hi,".
+- Do not use corporate jargon or filler like "I hope this finds you well".
+- Personalize the opening paragraph using the specific details from their profile_json to show genuine interest.
+- Output ONLY the email body. Do not include subject lines or markdown fences.

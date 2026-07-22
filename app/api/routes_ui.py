@@ -5,7 +5,7 @@ from sqlalchemy import select
 from typing import Optional
 
 from app.core.db import get_session
-from app.core.models import Lead, Pipeline, NegotiatorDraft
+from app.core.models import Lead, Pipeline, NegotiatorDraft, SignalHit
 from app.api.routes_runs import get_stats_today
 
 router = APIRouter(tags=["ui"])
@@ -35,6 +35,13 @@ async def dashboard(request: Request, status: Optional[str] = None):
             l_res = await session.execute(select(Lead).where(Lead.id == deal.lead_id))
             l = l_res.scalar_one()
             deals_with_lead.append({"deal": deal, "company": l.company_name})
+        # Fetch Signals
+        sig_res = await session.execute(
+            select(SignalHit)
+            .order_by(SignalHit.created_at.desc())
+            .limit(10)
+        )
+        signals = sig_res.scalars().all()
             
         return templates.TemplateResponse(
             request=request,
@@ -43,6 +50,7 @@ async def dashboard(request: Request, status: Optional[str] = None):
                 "stats": stats,
                 "leads": leads,
                 "deals": deals_with_lead,
+                "signals": signals,
                 "current_status": status
             }
         )

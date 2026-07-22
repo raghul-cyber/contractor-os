@@ -2,6 +2,7 @@
 data/*.db
 data/*.db-*
 logs/
+backups/
 __pycache__/
 .venv/
 *.pyc

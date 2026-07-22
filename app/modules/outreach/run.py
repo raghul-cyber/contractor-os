@@ -78,7 +78,7 @@ async def run_outreach(state: dict) -> dict:
                 
                 # Send
                 res = await send_email(
-                    to=lead.email or lead.decision_maker_email or "unknown@test.com",
+                    to=lead.decision_maker_email or lead.email or "unknown@test.com",
                     subject=initial_seq.subject,
                     body=initial_seq.body,
                     sending_identity=chosen_identity,
@@ -176,7 +176,7 @@ async def check_due_followups_job():
                 # Send
                 identity_to_use = seq.sending_identity or "default@ahixlight.com"
                 res = await send_email(
-                    to=lead.email or lead.decision_maker_email or "unknown@test.com",
+                    to=lead.decision_maker_email or lead.email or "unknown@test.com",
                     subject=seq.subject,
                     body=seq.body,
                     sending_identity=identity_to_use,

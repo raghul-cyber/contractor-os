@@ -8,8 +8,12 @@ services:
     env_file: .env
     volumes:
       - ./config:/app/config
+      # data/ volume: contains contractor_os.db and its WAL-mode sidecar files
+      # (-wal, -shm). All three live in the same directory, so this single
+      # mount ensures they persist correctly across container restarts.
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./backups:/app/backups
 
   ollama:
     image: ollama/ollama:latest

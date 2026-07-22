@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import os
 import json
 
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, text
 from app.core.models import Base, Lead, OutreachSequence, EmailEvent
@@ -31,6 +32,12 @@ class MockConfig:
             follow_up_intervals_days = [5, 10, 15]
             send_backend = "smtp"
         outreach = Outreach()
+        class SignalsMock:
+            class RedditMock:
+                enabled = True
+                poll_interval_minutes = 30
+            reddit = RedditMock()
+        signals = SignalsMock()
     system = System()
 
 @pytest_asyncio.fixture
@@ -42,6 +49,9 @@ async def temp_db_session_outreach(monkeypatch):
     os.close(db_fd)
     
     engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -225,8 +235,8 @@ async def test_scheduler_persistence():
         s1.start()
         register_jobs(s1, MockConfig())
         
-        # Verify 4 jobs in memory
-        assert len(s1.get_jobs()) == 4
+        # Verify 5 jobs in memory (4 original + daily_backup)
+        assert len(s1.get_jobs()) == 6
         s1.shutdown()
         
         # Query DB directly to prove it's in SQLite
@@ -239,13 +249,14 @@ async def test_scheduler_persistence():
             assert "followup_check" in db_ids
             assert "inbox_poll" in db_ids
             assert "daily_digest" in db_ids
+            assert "daily_backup" in db_ids
         engine.dispose()
         
         # Bring up s2 without calling register_jobs
         s2 = get_test_scheduler()
         s2.start()
         jobs2 = s2.get_jobs()
-        assert len(jobs2) == 4
+        assert len(jobs2) == 6  # 4 original + daily_backup
         s2.shutdown()
         
     finally:

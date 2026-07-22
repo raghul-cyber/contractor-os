@@ -13,12 +13,16 @@ import app.modules.crm.negotiator as negotiator_mod
 client = TestClient(app)
 
 import pytest_asyncio
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 import app.api.routes_leads as routes_leads_mod
 
 @pytest_asyncio.fixture
 async def db_session(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     

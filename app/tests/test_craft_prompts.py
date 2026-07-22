@@ -1,16 +1,18 @@
 import pytest
 import pytest_asyncio
 import json
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, text
 from app.core.models import Base, Lead, ActivityLog, OutreachSequence
 import app.modules.craft.run as craft_run_mod
 
 class MockService:
-    def __init__(self):
-        self.name = "Test Contractor"
-        self.description = "Test Desc"
-        self.price_range = "$1k"
+    def __init__(self, name="Test Contractor", description="Test Desc", price_range="$1k"):
+        self.name = name
+        self.description = description
+        self.price_range = price_range
+        self.category = "Test Category"
 
 class MockProfile:
     services = [MockService()]
@@ -23,11 +25,17 @@ class MockConfig:
             require_manual_approval = True
         craft = Craft()
     profile = MockProfile()
+    class CatalogMock:
+        services = MockProfile.services
+    catalog = CatalogMock()
     system = System()
 
 @pytest_asyncio.fixture
 async def temp_db_session_craft_prompts(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     

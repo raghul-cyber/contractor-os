@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from app.core.models import Base, Lead, ActivityLog, Run
@@ -10,6 +11,9 @@ import pytest_asyncio
 @pytest_asyncio.fixture
 async def temp_db_session_with_run(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     

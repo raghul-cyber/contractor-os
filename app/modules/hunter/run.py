@@ -3,6 +3,8 @@ from app.core.config_loader import get_config
 from app.core.db import get_session
 from app.core.models import Run, ActivityLog, Lead
 from sqlalchemy import select, update
+from dotenv import load_dotenv
+load_dotenv()
 
 from .sources.apify_maps import scrape_google_maps
 from .sources.apify_jobboard_signals import scrape_job_boards
@@ -11,11 +13,17 @@ from .sources.directory_import import scrape_directories
 from .sources.apify_contact import extract_contacts
 from .sources.apify_leadscraper import scrape_leads
 from .sources.manual_import import import_from_csv
+from .sources.local_search import scrape_local_search
 from .dedup import insert_lead_if_new
 
 logger = get_logger(__name__)
 
 async def run_hunter(state: dict) -> dict:
+    from dotenv import load_dotenv
+    from pathlib import Path
+    env_path = Path(__file__).parent.parent.parent.parent / '.env'
+    load_dotenv(dotenv_path=env_path, override=True)
+    
     """
     LangGraph entry point for the Hunter module.
     Calls sources in priority order: maps -> contact (backfill) -> leadscraper -> hunter.io -> manual
@@ -152,8 +160,26 @@ async def run_hunter(state: dict) -> dict:
                 logger.error(f"Apify Lead Scraper failed: {e}")
                 session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Lead Scraper failed: {e}"))
 
-        # 4. Hunter.io
-        # TODO: Implement Hunter.io as a manual top-up
+        # 4. Local Search (Fallback / Free Alternative)
+        if True: # Always attempt fallback if we need leads
+            try:
+                local_filters = {
+                    "sectors": config.targets.targeting.sectors,
+                    "location": config.targets.targeting.locations[0] if config.targets.targeting.locations else "Global",
+                    "limit": 20
+                }
+                local_results = await scrape_local_search(local_filters)
+                inserted_local = 0
+                for raw in local_results:
+                    if await insert_lead_if_new(session, raw):
+                        inserted_local += 1
+                    else:
+                        total_skipped += 1
+                total_inserted += inserted_local
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Local Search: {len(local_results)} found, {inserted_local} inserted"))
+            except Exception as e:
+                logger.error(f"Local Search fallback failed: {e}")
+                session.add(ActivityLog(lead_id=None, actor="hunter", action=f"Hunter - Local Search failed: {e}"))
 
         # 5. Manual CSV
         if csv_path:

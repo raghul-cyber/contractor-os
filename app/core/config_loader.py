@@ -91,6 +91,16 @@ class HunterSystemConfig(BaseModel):
     use_crunchbase: bool = True
     use_directories: bool = True
 
+class RedditSignalsConfig(BaseModel):
+    enabled: bool = False
+    subreddits: List[str] = []
+    poll_interval_minutes: int = 30
+    keywords: List[str] = []
+    lookback_hours: int = 2
+
+class SignalsSystemConfig(BaseModel):
+    reddit: RedditSignalsConfig
+
 class SystemConfig(BaseModel):
     batch_size: int
     cycle_interval_hours: int
@@ -98,6 +108,7 @@ class SystemConfig(BaseModel):
     craft: CraftSystemConfig
     outreach: OutreachSystemConfig
     hunter: HunterSystemConfig
+    signals: Optional[SignalsSystemConfig] = None
 
 class SystemRoot(BaseModel):
     system: SystemConfig

@@ -68,7 +68,8 @@ async def run_craft(state: dict) -> dict:
                     service_value_prop=my_profile.value_proposition,
                     company_name=lead.company_name,
                     domain=lead.domain,
-                    profile_json=lead.profile_json or "{}"
+                    profile_json=lead.profile_json or "{}",
+                    decision_maker_name=lead.decision_maker_name or "there"
                 )
                 full_prompt = initial_prompt + "\n\n" + followups_prompt_tmpl
                 
@@ -88,7 +89,7 @@ async def run_craft(state: dict) -> dict:
                 
                 # 3. Validate and Truncate Word Counts
                 seqs = []
-                for seq_type, limits in [("initial", 150), ("fu1", 80), ("fu2", 80), ("fu3", 80)]:
+                for seq_type, limits in [("initial", 400), ("fu1", 200), ("fu2", 200), ("fu3", 200)]:
                     if seq_type not in sequence_data:
                         raise ValueError(f"Missing {seq_type} in JSON")
                         

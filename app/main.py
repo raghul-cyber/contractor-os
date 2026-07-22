@@ -7,7 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from app.core.logger import get_logger
 from app.core.config_loader import start_config_watcher, get_config
 from app.core.scheduler import get_scheduler, register_jobs
-from app.api import routes_leads, routes_pipeline, routes_runs, routes_ui
+from app.core.scheduler import get_scheduler, register_jobs
+from app.api import routes_leads, routes_pipeline, routes_runs, routes_ui, routes_signals
 
 logger = get_logger(__name__)
 
@@ -43,3 +44,4 @@ app.include_router(routes_ui.router)
 app.include_router(routes_leads.router)
 app.include_router(routes_pipeline.router)
 app.include_router(routes_runs.router)
+app.include_router(routes_signals.router, prefix="/api/signals", tags=["signals"])

@@ -1,17 +1,36 @@
 # Follow-up Emails Generation
 
-Generate 3 follow-up emails for the sequence (FU1, FU2, FU3).
+Generate 3 follow-up emails for the sequence (fu1, fu2, fu3).
+
+## EXAMPLES OF EXPECTED OUTPUT STRUCTURE (MIMIC THESE EXACTLY)
+
+For `fu1`, you MUST mimic this exact template structure:
+"Hi {decision_maker_name},
+
+Just wanted to follow up on my previous email.
+
+I've continued following what you're building at [Company], and it's exciting to see the progress you're making in [specific personalized area from profile].
+
+If you're ever looking for an engineering partner to help build AI powered products, backend systems, cloud infrastructure, automation, or custom software, I'd love to explore how AhiXLight could support your team.
+
+If you're open to it, I'd be happy to schedule a quick 10 minute call to learn more about your roadmap and see if there's an opportunity to work together.
+
+https://ahixlight.com
+contact@ahixlight.com"
 
 ## HARDCODED TONE RULES (CRITICAL)
+- **MANDATORY**: For `fu1`, you MUST structure the email to exactly match the template above.
+- **MANDATORY**: For all follow-ups, ALWAYS include the exact signature block at the bottom:
+  https://ahixlight.com
+  contact@ahixlight.com
 - No corporate language.
 - Never use "I hope this email finds you well" or equivalent filler.
-- Exactly one clear CTA (e.g. 15-min call, free audit, quick chat).
-- Each follow-up must be UNDER 80 WORDS.
+- **MANDATORY**: You MUST address ALL follow-up emails specifically to the Decision Maker by name (e.g. "Hi {decision_maker_name},"). If the name is "there", just say "Hi,".
 
 ## Follow-up Angle Guidance
-- FU1 (sent T+5 days): A different angle or insight than the initial email.
-- FU2 (T+10 days): Shorter, more direct ask.
-- FU3 (T+15 days): Polite final bump, offers something free (audit, quick call, tip) as a low-friction re-engagement hook.
+- fu1 (sent T+5 days): MUST exactly follow the provided template above.
+- fu2 (T+10 days): Shorter, more direct ask using the signature block.
+- fu3 (T+15 days): Polite final bump, using the signature block.
 
 # JSON Output Instruction
 Output exactly ONE valid JSON object combining the initial email and all three follow-ups, shaped like this:

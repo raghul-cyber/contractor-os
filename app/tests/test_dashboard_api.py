@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import select, func
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 from datetime import datetime
@@ -20,6 +21,10 @@ async def e2e_session(monkeypatch):
         poolclass=StaticPool,
         connect_args={"check_same_thread": False}
     )
+    # Match production: enforce FK constraints in tests
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
@@ -168,8 +173,15 @@ async def test_stats_today(e2e_session):
     assert response_before.status_code == 200
     emails_before = response_before.json()["emails_sent_today"]
     
-    # Mutate DB directly
-    ev = EmailEvent(lead_id=1, sequence_id=1, event_type="sent", timestamp=f"{today}T12:00:00")
+    # Create parent rows first (FK enforcement requires them)
+    lead = Lead(company_name="StatsLead", domain="stats-test.com", status="SENT", source="test")
+    e2e_session.add(lead)
+    await e2e_session.commit()
+    seq = OutreachSequence(lead_id=lead.id, sequence_type="initial", subject="S", body="B", status="sent")
+    e2e_session.add(seq)
+    await e2e_session.commit()
+    
+    ev = EmailEvent(lead_id=lead.id, sequence_id=seq.id, event_type="sent", timestamp=f"{today}T12:00:00")
     e2e_session.add(ev)
     await e2e_session.commit()
         

@@ -54,6 +54,34 @@
                 {% endfor %}
             </tbody>
         </table>
+        
+        <!-- Reddit Signals Panel -->
+        <div class="mt-8 border-t pt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Recent Reddit Signals</h2>
+            </div>
+            <div class="space-y-4">
+                {% if signals %}
+                    {% for sig in signals %}
+                    <div class="border rounded p-3 bg-gray-50 flex justify-between items-start">
+                        <div>
+                            <div class="text-sm font-semibold text-blue-700">r/{{ sig.subreddit }}</div>
+                            <div class="font-bold mb-1">{{ sig.post_title }}</div>
+                            <div class="text-sm text-gray-700 italic mb-2 line-clamp-2">"{{ sig.snippet }}"</div>
+                            <div class="text-xs text-gray-500">
+                                By u/{{ sig.author_username }} &bull; Matched: <span class="bg-yellow-200 px-1 rounded">{{ sig.matched_keyword }}</span> &bull; {{ sig.created_at }}
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{{ sig.post_url }}" target="_blank" class="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700 inline-block whitespace-nowrap">View Thread</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-gray-500 text-sm italic">No recent signals found.</div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <div class="bg-white rounded shadow p-4">

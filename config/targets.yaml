@@ -1,53 +1,27 @@
 targeting:
   sectors:
-    - "B2B SaaS Startups (Seed–Series A)"
-    - "Construction & Contracting SMEs"
-    - "Content Creators"
-    - "Cybersecurity"
-    - "E-commerce"
-    - "E-commerce Brands ($1M–$20M Revenue)"
-    - "Education & EdTech"
-    - "Fintech"
-    - "Healthcare"
-    - "HVAC & Field Services"
-    - "Insurance Carriers & Brokers"
-    - "Legal Services"
-    - "Local Businesses"
-    - "Logistics & Supply Chain"
-    - "Manufacturing SMEs"
-    - "Marketing & Digital Agencies"
-    - "Professional Services"
-    - "Property Management Firms"
-    - "Real Estate Companies"
-    - "Recruitment Agencies"
-    - "Retail"
-    - "SaaS"
-    - "SMB (Small & Medium Businesses)"
-    - "Wealth Management & Financial Firms"
+    - "B2B SaaS Micro-Startups"
 
   company_types:
-    - "Growth-stage (Series A-C)"
-    - "Mid-market / enterprise (200-2000 employees)"
-    - "Recently funded (signal from Crunchbase/TechCrunch)"
+    - "Pre-seed / Seed"
+    - "Bootstrapped"
+    - "Micro-startup (1-10 employees)"
+    - "Solo-founder"
 
   locations:
     - "United States"
-    - "United Kingdom"
-    - "India"
 
   decision_maker_titles:
-    - "CTO"
-    - "VP Engineering"
-    - "Head of Engineering"
-    - "CISO"
-    - "Head of Product"
-    - "COO"
-    - "Director of IT"
     - "Founder / Co-founder"
+    - "CEO"
+    - "CTO"
+    - "Project Lead"
+    - "Solo Founder"
+    - "Indie Hacker"
 
   employee_range:
-    min: 50
-    max: 2000
+    min: 1
+    max: 25
 
   pain_signals:
     - "manual workflows"

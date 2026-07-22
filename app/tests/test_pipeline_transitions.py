@@ -3,6 +3,7 @@ import pytest_asyncio
 import os
 import json
 from datetime import datetime
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 
@@ -48,6 +49,14 @@ class MockConfig:
         services = [MockService()]
         value_proposition = "Value"
     profile = Profile()
+    class CatalogMock:
+        class MockService:
+            name = "S1"
+            description = "D1"
+            price_range = "$1k - $2k"
+            category = "Test Category"
+        services = [MockService()]
+    catalog = CatalogMock()
     class Targets:
         class Targeting:
             pain_signals = ["Cost", "Scale"]
@@ -57,6 +66,10 @@ class MockConfig:
 @pytest_asyncio.fixture
 async def e2e_session(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    # Match production: enforce FK constraints in tests
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -316,7 +329,12 @@ async def test_digest(e2e_session, monkeypatch):
     run = Run(leads_scraped=0, leads_researched=1, emails_sent=1, replies_received=0)
     session.add(run)
     
-    pipe = Pipeline(lead_id=1, stage="PROPOSAL_SENT", contract_value=5500.0)
+    # Create a parent Lead so the FK on Pipeline is satisfied
+    digest_lead = Lead(company_name="DigestCo", domain="digestco.com", status="SENT", source="test")
+    session.add(digest_lead)
+    await session.commit()
+    
+    pipe = Pipeline(lead_id=digest_lead.id, stage="PROPOSAL_SENT", contract_value=5500.0)
     session.add(pipe)
     await session.commit()
     

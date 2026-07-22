@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime, timedelta
 import os
 
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, text
 from app.core.models import Base, Lead, OutreachSequence, EmailEvent
@@ -22,6 +23,12 @@ class MockConfig:
             dry_run = True
             send_backend = "smtp"
         outreach = OutreachSystem()
+        class SignalsMock:
+            class RedditMock:
+                enabled = True
+                poll_interval_minutes = 30
+            reddit = RedditMock()
+        signals = SignalsMock()
     system = System()
     
     class OutreachRoot:
@@ -37,6 +44,9 @@ class MockConfig:
 @pytest_asyncio.fixture
 async def temp_db_session_outreach(monkeypatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -197,14 +207,14 @@ async def test_apscheduler_restarts():
         s1 = get_test_scheduler()
         s1.start()
         sched_mod.register_jobs(s1, MockConfig())
-        assert len(s1.get_jobs()) == 4
+        assert len(s1.get_jobs()) == 6  # 4 original + daily_backup + reddit_signals
         s1.shutdown()
         
         # 2. Re-initialize, don't register, check if jobs exist
         s2 = get_test_scheduler()
         s2.start()
         jobs = s2.get_jobs()
-        assert len(jobs) == 4
+        assert len(jobs) == 6  # 4 original + daily_backup
         s2.shutdown()
         
     finally:

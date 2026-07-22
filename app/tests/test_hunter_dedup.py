@@ -1,5 +1,6 @@
 import pytest
 import os
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.models import Base, Lead
 from app.modules.hunter.dedup import normalize_domain, insert_lead_if_new
@@ -28,6 +29,9 @@ import pytest_asyncio
 async def temp_db_session():
     # Use an in-memory SQLite DB for testing
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    @sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_fk(dbapi_conn, rec):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON;")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     

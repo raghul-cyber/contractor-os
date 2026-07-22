@@ -8,7 +8,7 @@ from app.core.models import Run, ActivityLog, Lead
 from app.core.llm_router import LLMRouter, RouterConfig
 
 from .scrapers.website import scrape_website
-from .scrapers.linkedin import scrape_linkedin_company
+from .scrapers.linkedin_company import scrape_linkedin_company
 from .scrapers.news import scrape_google_news
 from .scrapers.site_crawl import crawl_lead_site
 from .synthesizer import synthesize_profile

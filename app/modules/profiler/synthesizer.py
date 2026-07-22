@@ -90,14 +90,20 @@ Previous failing output:
             raise ValueError(retry_text if 'retry_text' in locals() else response_text)
 
 def parse_llm_json(text: str) -> ProfileModel:
-    # Strip markdown fences if present
-    text = text.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    elif text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-        
+    import re
+    # Try to find JSON block using regex if there's extra text
+    match = re.search(r'\{[\s\S]*\}', text)
+    if match:
+        text = match.group(0)
+    else:
+        # Strip markdown fences just in case regex failed
+        text = text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        elif text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+            
     data = json.loads(text.strip())
     return ProfileModel(**data)

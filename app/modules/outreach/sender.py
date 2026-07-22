@@ -6,6 +6,8 @@ from app.core.logger import get_logger
 from app.core.config_loader import get_config
 from app.core.db import get_session
 from app.core.models import EmailEvent
+from dotenv import load_dotenv
+load_dotenv()
 
 logger = get_logger(__name__)
 
@@ -71,6 +73,10 @@ async def _execute_send(to: str, subject: str, body: str, backend: str, sending_
 
 
 async def send_email(to: str, subject: str, body: str, sending_identity: str, dry_run: bool = False, session=None) -> dict:
+    from dotenv import load_dotenv
+    from pathlib import Path
+    env_path = Path(__file__).parent.parent.parent.parent / '.env'
+    load_dotenv(dotenv_path=env_path, override=True)
     """
     Sends an email enforcing daily limits per identity and dry_run.
     """
