@@ -43,9 +43,10 @@ async def run_craft(state: dict) -> dict:
     my_profile = config.profile
     
     async with get_session() as session:
-        leads_res = await session.execute(
-            select(Lead).where(Lead.status == "RESEARCHED").limit(config.system.batch_size)
-        )
+        query = select(Lead).where(Lead.status == "RESEARCHED")
+        if state.get("lead_ids"):
+            query = query.where(Lead.id.in_(state["lead_ids"]))
+        leads_res = await session.execute(query.limit(config.system.batch_size))
         leads = leads_res.scalars().all()
         
         if not leads:

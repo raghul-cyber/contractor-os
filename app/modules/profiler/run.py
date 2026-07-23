@@ -123,9 +123,10 @@ async def run_profiler(state: dict) -> dict:
     
     async with get_session() as session:
         # Pull RAW leads
-        leads_res = await session.execute(
-            select(Lead).where(Lead.status == "RAW").limit(batch_size)
-        )
+        query = select(Lead).where(Lead.status == "RAW")
+        if state.get("lead_ids"):
+            query = query.where(Lead.id.in_(state["lead_ids"]))
+        leads_res = await session.execute(query.limit(batch_size))
         leads = leads_res.scalars().all()
         
         if not leads:
