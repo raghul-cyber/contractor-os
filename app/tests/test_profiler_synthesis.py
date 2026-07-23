@@ -10,7 +10,7 @@ from app.modules.profiler.fit_scorer import score_fit
 from app.core.llm_router import LLMRouter, RouterConfig
 import app.modules.profiler.run as profiler_run_mod
 from app.modules.profiler.scrapers.website import scrape_website
-from app.modules.profiler.scrapers.linkedin_company import scrape_linkedin_company
+from app.modules.profiler.scrapers.linkedin_company import read_company_page
 from app.modules.profiler.scrapers.news import scrape_google_news
 
 class MockConfig:
@@ -140,7 +140,7 @@ async def test_website_partial_404(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_linkedin_403(monkeypatch):
-    import app.modules.profiler.scrapers.linkedin as linkedin_mod
+    import app.modules.profiler.scrapers.linkedin_company as linkedin_mod
     
     class MockResponse:
         @property
@@ -166,7 +166,7 @@ async def test_linkedin_403(monkeypatch):
 
     monkeypatch.setattr(linkedin_mod, "async_playwright", lambda: MockPlaywright())
     
-    res = await scrape_linkedin_company("Test Company", "test.com")
+    res = await linkedin_mod.read_company_page("Test Company")
     assert res is None # Did not raise
 
 @pytest.mark.asyncio
@@ -228,7 +228,7 @@ async def test_full_run_profiler(temp_db_session_with_3_leads, monkeypatch):
     async def mock_news(*args, **kwargs): return []
     
     monkeypatch.setattr(profiler_run_mod, "scrape_website", mock_website)
-    monkeypatch.setattr(profiler_run_mod, "scrape_linkedin_company", mock_linkedin)
+    monkeypatch.setattr(profiler_run_mod, "read_company_page", mock_linkedin)
     monkeypatch.setattr(profiler_run_mod, "scrape_google_news", mock_news)
     
     # Mock Config

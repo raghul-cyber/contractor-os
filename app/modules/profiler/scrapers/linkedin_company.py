@@ -1,9 +1,10 @@
 import asyncio
 import re
+import random
 from typing import Optional, Dict, Any
 from app.core.logger import get_logger
 from bs4 import BeautifulSoup
-from scrapling.fetchers import StealthyFetcher
+from playwright.async_api import async_playwright
 
 logger = get_logger(__name__)
 
@@ -15,7 +16,7 @@ def _is_login_wall(url: str, html: str) -> bool:
     
     html_lower = html.lower()
     # Sometimes LinkedIn serves a page that says "Sign in to LinkedIn" in the title or body
-    if "sign in to linkedin" in html_lower or "join linkedin" in html_lower:
+    if "sign in to linkedin" in html_lower or "join linkedin" in html_lower or "security check" in html_lower:
         # Check if the main content is missing
         if "company-about" not in html_lower and "about us" not in html_lower:
             return True
@@ -59,66 +60,79 @@ def _extract_linkedin_data(html: str) -> Dict[str, Any]:
         if emp_match:
             data["size"] = emp_match.group(1)
             
-    # Try to extract posts if visible (usually in 'update-components-text' or similar)
-    posts = []
-    for post in soup.select('.update-components-text'):
-        post_text = post.get_text(separator=' ', strip=True)
-        if post_text and post_text not in posts:
-            posts.append(post_text)
-            
-    if posts:
-        data["recent_posts"] = posts[:3]
+    # Follower count
+    follower_match = re.search(r'([\d,]+)\s+followers', soup.get_text(), re.IGNORECASE)
+    if follower_match:
+        data["followers"] = follower_match.group(1)
         
+    # Extract About description text
+    # Usually in a paragraph under an "About" or "Overview" heading, or with a specific class
+    about_section = soup.find(lambda tag: tag.name in ["h2", "h3"] and "About" in tag.get_text(strip=True))
+    if about_section:
+        about_text = []
+        curr = about_section.find_next_sibling()
+        while curr and curr.name not in ["h2", "h3", "dl"]:
+            text = curr.get_text(separator=' ', strip=True)
+            if text:
+                about_text.append(text)
+            curr = curr.find_next_sibling()
+        if about_text:
+            data["about"] = " ".join(about_text)
+            
+    # Fallback for about text
+    if "about" not in data:
+        # Often it's in a <p> with a specific class or data attribute
+        about_p = soup.select_one("p.break-words")
+        if about_p:
+            data["about"] = about_p.get_text(separator=' ', strip=True)
+            
     return data
 
-async def scrape_linkedin_company(company_name: str, website_url: str) -> Optional[Dict[str, Any]]:
+async def read_company_page(linkedin_slug_or_url: str) -> Optional[Dict[str, Any]]:
     """
     Fetches ONLY the public, logged-out version of a company's LinkedIn about page.
     Never authenticates. Returns None if it hits a login wall or fails.
     """
-    if not company_name:
+    if not linkedin_slug_or_url:
         return None
         
-    clean_name = re.sub(r'[^a-zA-Z0-9-]', '-', company_name.lower())
-    url = f"https://www.linkedin.com/company/{clean_name}/about"
+    # Respect low request rate if profiling multiple leads in batch
+    await asyncio.sleep(random.uniform(1.0, 3.0))
+        
+    if linkedin_slug_or_url.startswith("http"):
+        url = linkedin_slug_or_url
+    else:
+        clean_name = re.sub(r'[^a-zA-Z0-9-]', '-', linkedin_slug_or_url.lower())
+        url = f"https://www.linkedin.com/company/{clean_name}/about/"
     
     try:
-        # Use StealthyFetcher for anti-bot handling
-        fetcher = StealthyFetcher()
-        resp = await asyncio.to_thread(fetcher.fetch, url)
-        
-        if not resp:
-            logger.info(f"LinkedIn fetch failed for {url} (Empty response)")
-            return None
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context()
+            page = await context.new_page()
             
-        if resp.status not in (200, 201, 202, 203, 204):
-            logger.info(f"LinkedIn page blocked/failed for {url} (status: {resp.status})")
-            return None
+            response = await page.goto(url, wait_until="domcontentloaded", timeout=15000)
             
-        if _is_login_wall(resp.url, resp.text):
-            logger.info(f"LinkedIn authwall encountered for {url} (Redirected to: {resp.url})")
-            return None
-            
-        data = _extract_linkedin_data(resp.text)
-        data["url"] = url
-        
-        # Format the public_text for the synthesizer
-        summary_parts = []
-        if data.get("company_name"): summary_parts.append(f"Name: {data['company_name']}")
-        if data.get("industry"): summary_parts.append(f"Industry: {data['industry']}")
-        if data.get("size"): summary_parts.append(f"Size: {data['size']}")
-        if data.get("headquarters"): summary_parts.append(f"HQ: {data['headquarters']}")
-        if data.get("website"): summary_parts.append(f"Website: {data['website']}")
-        
-        if data.get("recent_posts"):
-            summary_parts.append("Recent Posts:")
-            for p in data["recent_posts"]:
-                summary_parts.append(f"- {p}")
+            if not response:
+                logger.info(f"LinkedIn fetch failed for {url} (Empty response)")
+                return None
                 
-        data["public_text"] = "\n".join(summary_parts)
-        
-        return data
+            if response.status not in (200, 201, 202, 203, 204):
+                logger.info(f"LinkedIn page blocked/failed for {url} (status: {response.status})")
+                return None
+                
+            html = await page.content()
+            final_url = page.url
+            
+            if _is_login_wall(final_url, html):
+                logger.info(f"LinkedIn authwall encountered for {url} (Redirected to: {final_url})")
+                return None
+                
+            data = _extract_linkedin_data(html)
+            
+            await browser.close()
+            return data
             
     except Exception as e:
-        logger.warning(f"LinkedIn public scrape failed for {url}: {e}")
+        logger.info(f"LinkedIn Playwright scraper failed gracefully for {url}: {e}")
         return None

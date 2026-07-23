@@ -8,7 +8,7 @@ from app.core.models import Run, ActivityLog, Lead
 from app.core.llm_router import LLMRouter, RouterConfig
 
 from .scrapers.website import scrape_website
-from .scrapers.linkedin_company import scrape_linkedin_company
+from .scrapers.linkedin_company import read_company_page
 from .scrapers.news import scrape_google_news
 from .scrapers.site_crawl import crawl_lead_site
 from .synthesizer import synthesize_profile
@@ -21,7 +21,20 @@ async def _process_lead(lead, router: LLMRouter, config, session) -> bool:
     try:
         # Concurrent Scraping
         website_task = asyncio.create_task(scrape_website(lead.website or lead.domain, lead_id=lead.id))
-        linkedin_task = asyncio.create_task(scrape_linkedin_company(lead.company_name, lead.website or lead.domain))
+        
+        use_linkedin = False
+        try:
+            if hasattr(config.system, 'profiler') and hasattr(config.system.profiler, 'use_linkedin_company_reader'):
+                use_linkedin = config.system.profiler.use_linkedin_company_reader
+        except Exception:
+            pass
+            
+        if use_linkedin:
+            linkedin_task = asyncio.create_task(read_company_page(lead.company_name))
+        else:
+            async def _dummy(): return None
+            linkedin_task = asyncio.create_task(_dummy())
+            
         news_task = asyncio.create_task(scrape_google_news(lead.company_name))
         
         max_pages = 15
