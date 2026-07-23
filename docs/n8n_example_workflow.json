@@ -1,0 +1,133 @@
+{
+  "name": "ContractorOS External Trigger Example",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "trigger-pipeline",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://app:8000/api/pipeline/hunter/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_SECRET_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Run Hunter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://app:8000/api/pipeline/profiler/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_SECRET_HERE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "lead_ids",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3",
+      "name": "Run Profiler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "general",
+        "text": "=Pipeline triggered. Hunter processed: {{ $json[\"processed\"] }}",
+        "otherOptions": {}
+      },
+      "id": "4",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [
+        850,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Run Hunter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Hunter": {
+      "main": [
+        [
+          {
+            "node": "Run Profiler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Profiler": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "f7823f99-966e-4b72-a89e-5c621cd494cf",
+  "id": "b18b4885-f538-4e8c-8c3b-7cc2b0b1bc6b",
+  "tags": []
+}

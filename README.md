@@ -422,6 +422,11 @@ contractor-os/
    docker compose up --build
    ```
    
+   *(Optional)* To also start the built-in n8n automation service for external workflows, run with the `n8n` profile:
+   ```bash
+   docker compose --profile n8n up
+   ```
+   
 > **Note:** It is highly recommended to start with the `dry_run` mode enabled in `system.yaml` to test prompts and logic before sending live emails!
 
 ---
