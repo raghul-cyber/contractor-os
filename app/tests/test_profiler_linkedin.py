@@ -65,3 +65,24 @@ async def test_read_company_page_login_wall(mock_playwright):
     result = await read_company_page("Blocked Company")
     assert result is None
 
+@pytest.mark.asyncio
+async def test_extract_linkedin_data_missing_fields():
+    # Mock HTML missing size and industry
+    html = """
+    <html>
+        <head><title>Minimal Company | LinkedIn</title></head>
+        <body>
+            <dl>
+                <dt>Website</dt><dd>http://minimal.com</dd>
+            </dl>
+        </body>
+    </html>
+    """
+    
+    data = _extract_linkedin_data(html)
+    
+    assert data["company_name"] == "Minimal Company"
+    assert data["website"] == "http://minimal.com"
+    assert "size" not in data
+    assert "industry" not in data
+    assert "followers" not in data

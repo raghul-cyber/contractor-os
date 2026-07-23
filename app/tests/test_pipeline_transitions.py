@@ -148,7 +148,7 @@ async def test_full_happy_path_integration(e2e_session, monkeypatch):
     async def mock_scrape_news(*args, **kwargs): return [{"title": "News"}]
     
     monkeypatch.setattr("app.modules.profiler.run.scrape_website", mock_scrape_website)
-    monkeypatch.setattr("app.modules.profiler.run.scrape_linkedin_company", mock_scrape_linkedin)
+    monkeypatch.setattr("app.modules.profiler.run.read_company_page", mock_scrape_linkedin)
     monkeypatch.setattr("app.modules.profiler.run.scrape_google_news", mock_scrape_news)
     
     # Mock Hunter Apify

@@ -159,7 +159,7 @@ async def test_profiler_resilience_to_scraper_failures(temp_db_session_with_lead
     
     async def mock_scrape_linkedin(*args, **kwargs):
         return None # Simulated block
-    monkeypatch.setattr(profiler_run_mod, "scrape_linkedin_company", mock_scrape_linkedin)
+    monkeypatch.setattr(profiler_run_mod, "read_company_page", mock_scrape_linkedin)
     
     async def mock_scrape_news(*args, **kwargs):
         return []
